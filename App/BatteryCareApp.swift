@@ -1,15 +1,11 @@
 import SwiftUI
 
-// MARK: - Stubs (replaced in Tasks 15 & 16)
-
-class BatteryViewModel: ObservableObject {}
+// MARK: - Stubs — MenuBarView replaced in Task 16
 
 struct MenuBarView: View {
     let vm: BatteryViewModel
     var body: some View { Text("BatteryCare") }
 }
-
-// MARK: - App entry point
 
 @main
 struct BatteryCareApp: App {
