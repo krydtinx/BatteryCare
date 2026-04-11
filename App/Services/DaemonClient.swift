@@ -1,9 +1,20 @@
 import Foundation
 import Darwin
+import Combine
 import BatteryCareShared
 import os.log
 
 private let logger = Logger(subsystem: "com.batterycare.app", category: "client")
+
+// MARK: - Protocol
+
+public protocol DaemonClientProtocol: AnyObject {
+    var statusPublisher: AnyPublisher<StatusUpdate, Never> { get }
+    var connectedPublisher: AnyPublisher<Bool, Never> { get }
+    func start()
+    func stop()
+    func send(_ command: Command) async
+}
 
 // MARK: - Framing parser (inline copy — App target cannot import Daemon module)
 
@@ -26,11 +37,21 @@ private struct FramingParser {
 /// Connects to the Battery Care daemon socket and publishes status updates.
 /// The blocking read loop runs on a dedicated Thread to avoid starving the Swift cooperative pool.
 @MainActor
-public final class DaemonClient: ObservableObject {
+public final class DaemonClient: ObservableObject, DaemonClientProtocol {
     public static let shared = DaemonClient()
 
     @Published public private(set) var latestStatus: StatusUpdate?
     @Published public private(set) var isConnected: Bool = false
+
+    // MARK: - DaemonClientProtocol publishers
+
+    public var statusPublisher: AnyPublisher<StatusUpdate, Never> {
+        $latestStatus.compactMap { $0 }.eraseToAnyPublisher()
+    }
+
+    public var connectedPublisher: AnyPublisher<Bool, Never> {
+        $isConnected.eraseToAnyPublisher()
+    }
 
     private let socketPath = "/var/run/battery-care/daemon.sock"
 
@@ -64,7 +85,7 @@ public final class DaemonClient: ObservableObject {
     }
 
     /// Send a command; reply arrives as a broadcast StatusUpdate via the read loop.
-    public func send(_ command: Command) {
+    public func send(_ command: Command) async {
         fdLock.lock()
         let currentFD = fd
         fdLock.unlock()
