@@ -1,5 +1,6 @@
 import Foundation
 import Darwin
+import os.log
 import BatteryCareShared
 
 // MARK: - Protocol (enables mock injection in tests)
@@ -49,6 +50,7 @@ public final class SocketServer: SocketServerProtocol, @unchecked Sendable {
     private let socketPath: String
     private let allowedUID: uid_t
     private var serverFD: Int32 = -1
+    private let logger = Logger(subsystem: "com.batterycare.daemon", category: "socket")
     private let clientLock = NSLock()
     private var clientFDs: [Int32] = []
     private let encoder = JSONEncoder()
@@ -69,7 +71,11 @@ public final class SocketServer: SocketServerProtocol, @unchecked Sendable {
 
         // Create socket directory
         let dir = (socketPath as NSString).deletingLastPathComponent
-        try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(
+            atPath: dir,
+            withIntermediateDirectories: true,
+            attributes: [.posixPermissions: 0o700]
+        )
         unlink(socketPath)
 
         var addr = sockaddr_un()
@@ -136,6 +142,7 @@ public final class SocketServer: SocketServerProtocol, @unchecked Sendable {
             }
             guard clientFD >= 0 else {
                 if errno == EINTR { continue }
+                logger.critical("accept() failed with errno \(errno) — socket server shutting down")
                 return
             }
 

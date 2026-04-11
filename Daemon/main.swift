@@ -16,6 +16,11 @@ try? FileManager.default.createDirectory(
 // Load settings
 let settings = DaemonSettings.load()
 
+guard settings.allowedUID != 0 else {
+    logger.critical("settings.json missing or allowedUID not seeded — refusing to start. Run the app first to install the daemon.")
+    exit(1)
+}
+
 // Wire up dependencies
 let smc = SMCService()
 let battery = BatteryMonitor()

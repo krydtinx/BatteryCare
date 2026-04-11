@@ -46,9 +46,7 @@ public actor DaemonCore {
         try await withThrowingTaskGroup(of: Void.self) { group in
             group.addTask { try await self.pollingLoop() }
             group.addTask { await self.sleepLoop() }
-            // Rethrow the first error, which cancels the group and all remaining tasks.
-            try await group.next()
-            group.cancelAll()
+            for try await _ in group {}  // throws on first error; group auto-cancels remaining on scope exit
         }
     }
 
@@ -75,22 +73,19 @@ public actor DaemonCore {
             try? settings.save()
             if let reading = try? battery.read() {
                 stateMachine.forceEnable(reading: reading, limit: settings.limit)
-                applyState()
+                let smcError = applyState()
+                let update = makeStatusUpdate(error: smcError)
+                socketServer.broadcast(update)
+                return update
             }
-            let update = makeStatusUpdate()
-            socketServer.broadcast(update)
-            return update
+            return makeStatusUpdate()
 
         case .disableCharging:
             settings.isChargingDisabled = true
             try? settings.save()
             stateMachine.forceDisable()
-            do {
-                try smc.perform(.disableCharging)
-            } catch {
-                return makeStatusUpdate(error: .smcWriteFailed, errorDetail: "\(error)")
-            }
-            let update = makeStatusUpdate()
+            let smcError = applyState()
+            let update = makeStatusUpdate(error: smcError)
             socketServer.broadcast(update)
             return update
         }
@@ -143,15 +138,17 @@ public actor DaemonCore {
         }
     }
 
-    private func applyState() {
+    @discardableResult
+    private func applyState() -> DaemonError? {
         switch stateMachine.state {
         case .charging:
-            try? smc.perform(.enableCharging)
+            do { try smc.perform(.enableCharging) } catch { return .smcWriteFailed }
         case .limitReached, .disabled:
-            try? smc.perform(.disableCharging)
+            do { try smc.perform(.disableCharging) } catch { return .smcWriteFailed }
         case .idle:
             break
         }
+        return nil
     }
 
     private func makeStatusUpdate(
