@@ -67,7 +67,9 @@ public final class BatteryViewModel: ObservableObject {
 
         client.connectedPublisher
             .receive(on: DispatchQueue.main)
-            .assign(to: \.isConnected, on: self)
+            .sink { [weak self] connected in
+                self?.isConnected = connected
+            }
             .store(in: &cancellables)
     }
 
