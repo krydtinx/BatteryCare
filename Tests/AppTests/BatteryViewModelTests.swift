@@ -1,7 +1,7 @@
 import XCTest
 import Combine
 import BatteryCareShared
-@testable import BatteryCareApp
+@testable import BatteryCare
 
 final class BatteryViewModelTests: XCTestCase {
 

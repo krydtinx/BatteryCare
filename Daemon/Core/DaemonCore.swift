@@ -103,7 +103,14 @@ public actor DaemonCore {
 
     private func sleepLoop() async {
         for await event in sleepWatcher.events() {
-            if case .hasPoweredOn = event {
+            switch event {
+            case .willSleep:
+                // Write charging intent before sleep so firmware holds the correct state.
+                applyState()
+            case .hasPoweredOn:
+                // Re-apply immediately on wake — this is the window where powerd tries
+                // to re-enable charging. Must happen before pollOnce() evaluates state.
+                applyState()
                 pollOnce()
             }
         }
@@ -114,12 +121,14 @@ public actor DaemonCore {
     private func pollOnce() {
         do {
             let reading = try battery.read()
-            let changed = stateMachine.evaluate(
+            stateMachine.evaluate(
                 reading: reading,
                 limit: settings.limit,
                 isDisabled: settings.isChargingDisabled
             )
-            if changed { applyState() }
+            // Always re-apply when charging should be off — this counters any powerd override
+            // that may have re-enabled charging between polls.
+            applyState()
             socketServer.broadcast(makeStatusUpdate(from: reading))
         } catch {
             let update = makeStatusUpdate(error: .batteryReadFailed, errorDetail: "\(error)")

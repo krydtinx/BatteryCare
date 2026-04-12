@@ -46,15 +46,12 @@ public final class BatteryMonitor: BatteryMonitorProtocol, @unchecked Sendable {
         }
         defer { IOObjectRelease(service) }
 
-        let currentCapacity = try intProperty(service, key: "CurrentCapacity")
-        let maxCapacity     = try intProperty(service, key: "AppleRawMaxCapacity")
-        let isCharging      = boolProperty(service, key: "IsCharging")
+        // CurrentCapacity is already a percentage (0–100) on Apple Silicon.
+        // AppleRawCurrentCapacity / AppleRawMaxCapacity are in mAh — not used for % here.
+        let percentage    = try intProperty(service, key: "CurrentCapacity")
+        let isCharging    = boolProperty(service, key: "IsCharging")
         let externalConnected = boolProperty(service, key: "ExternalConnected")
 
-        guard maxCapacity > 0 else {
-            throw BatteryMonitorError.readFailed("MaxCapacity is zero")
-        }
-        let percentage = Int(Double(currentCapacity) / Double(maxCapacity) * 100.0)
         return BatteryReading(
             percentage: min(max(percentage, 0), 100),
             isCharging: isCharging,

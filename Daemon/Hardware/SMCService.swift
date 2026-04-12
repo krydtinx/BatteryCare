@@ -16,7 +16,7 @@ public enum SMCError: Error, CustomStringConvertible {
         case .keyNotFound(let key):      return "SMC key not found: \(key)"
         case .writeFailed(let key, let kr): return "SMC write failed for \(key): \(kr)"
         case .readFailed(let key, let kr):  return "SMC read failed for \(key): \(kr)"
-        case .noChargingKeyAvailable:    return "Neither CH0B nor CH0C is writable on this Mac"
+        case .noChargingKeyAvailable:    return "No writable charging key found (tried CHTE, CH0B, CH0C)"
         }
     }
 }
@@ -24,8 +24,29 @@ public enum SMCError: Error, CustomStringConvertible {
 // MARK: - Write intent
 
 public enum SMCWrite {
-    case enableCharging   // 0x00 to CH0B + CH0C
-    case disableCharging  // 0x02 to CH0B + CH0C
+    case enableCharging
+    case disableCharging
+}
+
+// MARK: - Detected key variant
+
+/// Represents a charging key and the byte values it uses.
+private enum ChargingKey {
+    /// M4 Tahoe key: CHTE — 4-byte, pass-through mode (stop charging, keep adapter power)
+    case tahoe(String)
+    /// Pre-Tahoe legacy key: disable=0x02, enable=0x00
+    case legacy(String)
+
+    var name: String {
+        switch self { case .tahoe(let k), .legacy(let k): return k }
+    }
+
+    func bytes(for write: SMCWrite) -> [UInt8] {
+        switch self {
+        case .tahoe:  return write == .disableCharging ? [0x01, 0x00, 0x00, 0x00] : [0x00, 0x00, 0x00, 0x00]
+        case .legacy: return write == .disableCharging ? [0x02] : [0x00]
+        }
+    }
 }
 
 // MARK: - Protocol
@@ -45,11 +66,8 @@ public protocol SMCServiceProtocol: Sendable {
 
 public final class SMCService: SMCServiceProtocol, @unchecked Sendable {
 
-    // Keys to try, in probe order. Both are written when available.
-    private static let chargingKeys = ["CH0B", "CH0C"]
-
     private var conn: io_connect_t = 0
-    private var availableKeys: [String] = []
+    private var detectedKeys: [ChargingKey] = []
     private let lock = NSLock()
 
     public init() {}
@@ -64,8 +82,8 @@ public final class SMCService: SMCServiceProtocol, @unchecked Sendable {
             throw SMCError.connectionFailed(kr)
         }
         conn = connection
-        availableKeys = try probeChargingKeys()
-        if availableKeys.isEmpty {
+        detectedKeys = probeChargingKeys()
+        if detectedKeys.isEmpty {
             SMCClose(conn)
             conn = 0
             throw SMCError.noChargingKeyAvailable
@@ -76,25 +94,26 @@ public final class SMCService: SMCServiceProtocol, @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
 
-        let byte: UInt8 = (write == .enableCharging) ? 0x00 : 0x02
         var errors: [SMCError] = []
 
-        for key in availableKeys {
+        for chargingKey in detectedKeys {
+            let writeBytes = chargingKey.bytes(for: write)
             do {
-                try writeKey(key, byte: byte)
-                // Read-back verification
-                let readBack = try readKeyRaw(key)
-                if readBack.first != byte {
-                    // Log mismatch but don't throw — other key may succeed
-                    errors.append(.writeFailed(key, kern_return_t(kIOReturnNotWritable)))
+                try writeKey(chargingKey.name, bytes: writeBytes)
+                // For legacy keys, verify the written byte echoes back exactly.
+                // Tahoe keys (CHTE) may report different values — skip verification.
+                if case .legacy = chargingKey {
+                    let readBack = try readKeyRaw(chargingKey.name)
+                    if readBack.first != writeBytes.first {
+                        errors.append(.writeFailed(chargingKey.name, kern_return_t(kIOReturnNotWritable)))
+                    }
                 }
             } catch let e as SMCError {
                 errors.append(e)
             }
         }
 
-        // Succeed if at least one key was written without error
-        if errors.count == availableKeys.count {
+        if errors.count == detectedKeys.count {
             throw errors.first ?? SMCError.noChargingKeyAvailable
         }
     }
@@ -112,37 +131,43 @@ public final class SMCService: SMCServiceProtocol, @unchecked Sendable {
             SMCClose(conn)
             conn = 0
         }
-        availableKeys = []
+        detectedKeys = []
     }
 
     // MARK: - Private helpers
 
-    /// Probe each charging key with a harmless read; keep those that respond.
-    private func probeChargingKeys() throws -> [String] {
-        var found: [String] = []
-        for key in Self.chargingKeys {
-            var keyBuf = UInt32Char_t()
-            _ = key.withCString { src in
-                withUnsafeMutableBytes(of: &keyBuf) { dst in
-                    memcpy(dst.baseAddress!, src, min(key.utf8.count, 4))
-                }
-            }
-            var val = SMCVal_t()
-            let kr = SMCReadKey2(&keyBuf, &val, conn)
-            if kr == KERN_SUCCESS {
-                found.append(key)
-            }
-        }
-        return found
+    /// Probe charging keys in priority order. Returns the first working variant found.
+    /// Tahoe (M4): CHTE (4-byte pass-through) with dataSize > 0
+    /// Legacy (M1/M2/M3): CH0B and CH0C
+    private func probeChargingKeys() -> [ChargingKey] {
+        // Tahoe key — M4 Tahoe firmware exposes CHTE (4-byte pass-through mode)
+        if probeRawKey("CHTE") { return [.tahoe("CHTE")] }
+
+        // Legacy keys — both written together on pre-Tahoe chips
+        let legacyFound = ["CH0B", "CH0C"].filter { probeRawKey($0) }
+        return legacyFound.map { .legacy($0) }
     }
 
-    private func writeKey(_ key: String, byte: UInt8) throws {
-        var b = byte
-        let kr = withUnsafeMutablePointer(to: &b) { ptr in
+    /// Returns true if the key responds with dataSize > 0.
+    private func probeRawKey(_ key: String) -> Bool {
+        var keyBuf = UInt32Char_t()
+        _ = key.withCString { src in
+            withUnsafeMutableBytes(of: &keyBuf) { dst in
+                memcpy(dst.baseAddress!, src, min(key.utf8.count, 4))
+            }
+        }
+        var val = SMCVal_t()
+        let kr = SMCReadKey2(&keyBuf, &val, conn)
+        return kr == KERN_SUCCESS && val.dataSize > 0
+    }
+
+    private func writeKey(_ key: String, bytes: [UInt8]) throws {
+        var buf = bytes
+        let kr = buf.withUnsafeMutableBufferPointer { ptr in
             SMCWriteSimple(
                 UnsafeMutablePointer(mutating: (key as NSString).utf8String)!,
-                ptr,
-                1,
+                ptr.baseAddress!,
+                Int32(ptr.count),
                 conn
             )
         }
