@@ -17,7 +17,7 @@ A macOS menu bar app with a privileged root daemon that limits battery charging 
 ```
 ┌─────────────────────────────────────────────┐
 │  Menu Bar App  (runs as your user)           │
-│  SwiftUI UI · BatteryViewModel · DaemonClient│
+│  NSStatusItem · BatteryViewModel · DaemonClient│
 └──────────────────┬──────────────────────────┘
                    │  Unix domain socket IPC
                    │  /var/run/battery-care/daemon.sock
@@ -39,9 +39,23 @@ A macOS menu bar app with a privileged root daemon that limits battery charging 
 
 The app and daemon are separate processes with a hard UID gate:
 
-- The **menu bar app** runs as your user. It connects to the daemon socket, sends `Command` messages (JSON), and receives `StatusUpdate` pushes.
+- The **menu bar app** runs as your user. It manages an `NSStatusItem` with a dynamic icon, opens an `NSPopover` for the UI, and communicates with the daemon via socket.
 - The **daemon** runs as root via a `LaunchDaemon` plist (`UserName = root`). It holds the SMC connection and is the only process that touches hardware. On startup it reads `allowedUID` from `settings.json`; connections from any other UID are silently rejected via `getpeereid()`.
 - Settings are stored at `/Library/Application Support/BatteryCare/settings.json`, writable only by root.
+
+### Menu Bar Icon
+
+The status bar icon reflects the current charging state:
+
+| Icon | State |
+|---|---|
+| Battery + bolt | Charging |
+| Battery + plug | Limit reached — daemon has paused charging |
+| Battery + pause | Manually paused by user |
+| Full battery | Idle (unplugged) |
+| Warning triangle | Daemon not connected |
+
+> **M4 Tahoe note:** macOS's own battery bolt icon in the system menu bar cannot be changed via SMC on M4. The BatteryCare icon is the authoritative indicator of charging state.
 
 ### SMC Key Research — Why Each Key Was Chosen
 
@@ -135,13 +149,15 @@ Sent as a response to any command and also pushed proactively after every poll t
 
 `IOAllowPowerChange` is called synchronously in the IOKit callback before returning, which is required — if the callback does not ack within ~30 seconds, macOS force-sleeps regardless.
 
-### SMAppService Daemon Registration
+### Daemon Installation
 
-On first launch, `AppDelegate` calls `SMAppService.daemon(plistName:).register()` to install the daemon. Before registering, it seeds `settings.json` with the current user's UID into `allowedUID`. This must happen before the daemon starts so the daemon has the correct UID ready when it reads its settings on first launch.
+`install.sh` installs the daemon directly via `launchctl` rather than through `SMAppService`:
 
-If the app detects a stale registration (service is `.enabled` but `settings.json` is missing, e.g. after the app was reinstalled from a different path), it unregisters first and re-registers cleanly.
+1. Copies `com.batterycare.daemon.plist` from the app bundle to `/Library/LaunchDaemons/`
+2. Seeds `settings.json` with the logged-in user's UID into `allowedUID`
+3. Runs `launchctl bootstrap system` to start the daemon immediately — no approval prompt required
 
-The LaunchDaemon plist (`com.batterycare.daemon.plist`) is bundled inside `BatteryCare.app` and references the daemon binary at `/Applications/BatteryCare.app/Contents/MacOS/battery-care-daemon`. SMAppService copies the plist to `/Library/LaunchDaemons/` on `register()`.
+The LaunchDaemon plist references the daemon binary at `/Applications/BatteryCare.app/Contents/MacOS/battery-care-daemon`.
 
 Daemon logs are written to:
 - `/Library/Logs/BatteryCare/daemon.log`
@@ -168,19 +184,18 @@ cd battery-care
 sudo bash install.sh
 ```
 
-When the app opens, macOS will prompt you to allow the background service. Click **Allow**.
-
 Then disable macOS Optimized Charging so it does not conflict:
 **System Settings → Battery → Battery Health → Optimized Battery Charging → Off**
 
 ### What install.sh does, step by step
 
-1. Builds the `BatteryCare` scheme in Release configuration into `/tmp/BatteryCare-build`.
+1. Builds the `BatteryCare` scheme in Release configuration into `~/BatteryCare-build`.
 2. Runs `sudo launchctl bootout` to stop any existing daemon.
 3. Copies the built `BatteryCare.app` to `/Applications/BatteryCare.app` and sets `root:wheel` ownership.
 4. Strips Gatekeeper provenance attributes (`xattr -rc`) so the app is not quarantined.
-5. Creates `/Library/Application Support/BatteryCare/` owned by the logged-in user, and removes any stale `settings.json`.
-6. Opens the app as the logged-in user, which triggers `AppDelegate` → seeds `settings.json` → calls `SMAppService.register()`.
+5. Copies the LaunchDaemon plist to `/Library/LaunchDaemons/` and seeds `settings.json` with the logged-in user's UID.
+6. Runs `launchctl bootstrap system` to start the daemon.
+7. Opens the app and cleans up the build directory.
 
 ### Build individual targets manually
 
@@ -189,21 +204,21 @@ Then disable macOS Optimized Charging so it does not conflict:
 xcodebuild -project BatteryCare/BatteryCare.xcodeproj \
            -scheme BatteryCare \
            -configuration Release \
-           -derivedDataPath /tmp/bc-build \
+           -derivedDataPath ~/bc-build \
            build
 
 # Build the daemon only
 xcodebuild -project BatteryCare/BatteryCare.xcodeproj \
            -scheme battery-care-daemon \
            -configuration Release \
-           -derivedDataPath /tmp/bc-build \
+           -derivedDataPath ~/bc-build \
            build
 ```
 
 ### Redeploy daemon after a rebuild
 
 ```bash
-sudo cp /tmp/bc-build/Build/Products/Release/battery-care-daemon \
+sudo cp ~/bc-build/Build/Products/Release/battery-care-daemon \
         /Applications/BatteryCare.app/Contents/MacOS/battery-care-daemon
 sudo launchctl bootout system /Library/LaunchDaemons/com.batterycare.daemon.plist
 sudo launchctl bootstrap system /Library/LaunchDaemons/com.batterycare.daemon.plist
@@ -241,7 +256,7 @@ All daemon subsystems are protocol-based (`SMCServiceProtocol`, `BatteryMonitorP
 
 ## Debug Tools
 
-The `debug-tools/` directory contains C programs for probing and testing SMC keys directly. All tools must be run as root. Compile from the repo root so that the include path to `BatteryCare/battery-care-daemon/Hardware/ThirdParty/smc.h` resolves correctly.
+The `debug-tools/` directory contains C programs for probing and testing SMC keys directly. All tools must be run as root. Compile from the repo root.
 
 ### probe_smc.c — probe all charging-related SMC keys
 
@@ -289,6 +304,17 @@ sudo ./reenable_charging
 
 > **M4 note:** This tool writes to CHIE (legacy key). On M4 Tahoe, if the daemon used CHTE to disable charging, run `test_chte` instead — it re-enables at step 4 of its cycle.
 
+### icon_investigation.c / smc_diff.c / test_chib.c — M4 icon research tools
+
+Tools written during investigation of the M4 `ExternalChargeCapable` IORegistry flag (which controls the macOS battery bolt icon). The SMC diff confirmed that no writable SMC key changes `ExternalChargeCapable` on M4 Tahoe — the flag is derived from hardware state and cannot be set via SMC writes. These tools are preserved for reference.
+
+```bash
+clang -o icon_investigation debug-tools/icon_investigation.c \
+      -framework IOKit -framework CoreFoundation
+sudo ./icon_investigation        # enumerate all CH*/AC*/B0* keys
+sudo ./icon_investigation --write  # attempt force-writes (safe, restores after)
+```
+
 ---
 
 ## Repository Layout
@@ -299,10 +325,12 @@ battery-care/
 │   ├── BatteryCare.xcodeproj
 │   ├── BatteryCare/                  # Menu bar app target
 │   │   ├── BatteryCareApp.swift
-│   │   ├── AppDelegate.swift
+│   │   ├── AppDelegate.swift         # NSStatusItem, dynamic icon, daemon settings
 │   │   ├── Services/DaemonClient.swift
 │   │   ├── ViewModels/BatteryViewModel.swift
 │   │   └── Views/
+│   │       ├── MenuBarView.swift
+│   │       └── OptimizedChargingBanner.swift
 │   ├── battery-care-daemon/          # Daemon target (root process)
 │   │   ├── Core/
 │   │   │   ├── DaemonCore.swift
