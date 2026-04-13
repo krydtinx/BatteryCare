@@ -98,13 +98,17 @@ public final class DaemonClient: ObservableObject, DaemonClientProtocol {
     // MARK: - Read thread (runs on a dedicated Thread, not the cooperative pool)
 
     private func readThreadMain() {
-        var delaySeconds: Double = 1.0
-        let maxDelay: Double = 30.0
+        // Retry every 0.5s for the first 20 attempts (~10s), then back off to max 10s.
+        // This ensures fast reconnect after daemon startup without hammering indefinitely.
+        var attempt = 0
+        var delaySeconds: Double = 0.5
+        let maxDelay: Double = 10.0
 
         while !Thread.current.isCancelled {
             if connectSocket() {
                 DispatchQueue.main.async { self.isConnected = true }
-                delaySeconds = 1.0  // reset backoff on successful connect
+                attempt = 0
+                delaySeconds = 0.5  // reset on successful connect
                 readUntilDisconnect()
                 closeSocket()
                 DispatchQueue.main.async { self.isConnected = false }
@@ -112,7 +116,10 @@ public final class DaemonClient: ObservableObject, DaemonClientProtocol {
 
             guard !Thread.current.isCancelled else { break }
             Thread.sleep(forTimeInterval: delaySeconds)
-            delaySeconds = min(delaySeconds * 2, maxDelay)
+            attempt += 1
+            if attempt >= 20 {
+                delaySeconds = min(delaySeconds * 2, maxDelay)
+            }
         }
     }
 

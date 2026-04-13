@@ -1,47 +1,79 @@
 import AppKit
-import ServiceManagement
+import SwiftUI
+import Combine
 import BatteryCareShared
 import os.log
 
 private let logger = Logger(subsystem: "com.batterycare.app", category: "install")
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private let daemonPlistName = "com.batterycare.daemon.plist"
-
-    var daemonStatus: SMAppService.Status {
-        SMAppService.daemon(plistName: daemonPlistName).status
-    }
+    let viewModel = BatteryViewModel()
+    private var statusItem: NSStatusItem?
+    private var popover: NSPopover?
+    private var cancellables = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let service = SMAppService.daemon(plistName: daemonPlistName)
+        NSApp.setActivationPolicy(.accessory)  // hide from Dock
+        setupStatusItem()
 
-        // If enabled but settings.json is missing, the registration is stale (e.g. app was
-        // reinstalled from a different path). Unregister so we can register fresh.
+        // Ensure settings.json exists (install.sh seeds it, but guard against manual installs).
         let settingsPath = "/Library/Application Support/BatteryCare/settings.json"
-        if service.status == .enabled && !FileManager.default.fileExists(atPath: settingsPath) {
-            logger.info("Stale SMAppService registration detected — unregistering")
-            try? service.unregister()
-        }
-
-        guard service.status != .enabled else { return }
-        do {
-            try installDaemon()
-        } catch {
-            logger.error("Auto-install failed: \(error.localizedDescription, privacy: .public)")
+        if !FileManager.default.fileExists(atPath: settingsPath) {
+            do {
+                try seedInitialSettings()
+            } catch {
+                logger.error("Failed to seed settings.json: \(error.localizedDescription, privacy: .public)")
+            }
         }
     }
 
-    /// Seeds settings.json with current user's UID, then registers the daemon via SMAppService.
-    /// Must be called BEFORE register() so the daemon reads the correct allowedUID on first start.
-    func installDaemon() throws {
-        try seedInitialSettings()
-        try SMAppService.daemon(plistName: daemonPlistName).register()
-        logger.info("Daemon registered via SMAppService")
+    // MARK: - Status Item
+
+    private func setupStatusItem() {
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        item.button?.action = #selector(togglePopover)
+        item.button?.target = self
+        statusItem = item
+
+        let pop = NSPopover()
+        pop.contentSize = CGSize(width: 280, height: 420)
+        pop.behavior = .transient
+        pop.contentViewController = NSHostingController(rootView: MenuBarView(vm: viewModel))
+        popover = pop
+
+        updateIcon(state: viewModel.chargingState, connected: viewModel.isConnected)
+
+        viewModel.$chargingState
+            .combineLatest(viewModel.$isConnected)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state, connected in
+                self?.updateIcon(state: state, connected: connected)
+            }
+            .store(in: &cancellables)
     }
 
-    func uninstallDaemon() throws {
-        try SMAppService.daemon(plistName: daemonPlistName).unregister()
-        logger.info("Daemon unregistered")
+    private func updateIcon(state: ChargingState, connected: Bool) {
+        let name: String
+        if !connected {
+            name = "exclamationmark.triangle"
+        } else {
+            switch state {
+            case .charging:     name = "bolt.fill"
+            case .limitReached: name = "lock.fill"
+            case .idle:         name = "battery.100"
+            case .disabled:     name = "battery.slash"
+            }
+        }
+        statusItem?.button?.image = NSImage(systemSymbolName: name, accessibilityDescription: nil)
+    }
+
+    @objc private func togglePopover() {
+        guard let button = statusItem?.button else { return }
+        if popover?.isShown == true {
+            popover?.performClose(nil)
+        } else {
+            popover?.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        }
     }
 
     // MARK: - Private
