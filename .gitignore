@@ -14,6 +14,8 @@ DerivedData/
 build/
 .build/
 
+dist/
+
 # Compiled debug-tools binaries (keep .c sources, ignore compiled output)
 debug-tools/chie_monitor
 debug-tools/probe_smc

@@ -1,0 +1,7 @@
+#!/bin/bash
+# Launch BatteryCare so SMAppService registration prompt appears immediately.
+LOGGED_IN_USER=$(stat -f "%Su" /dev/console 2>/dev/null)
+if [ -n "$LOGGED_IN_USER" ] && [ "$LOGGED_IN_USER" != "root" ]; then
+    sudo -u "$LOGGED_IN_USER" open /Applications/BatteryCare.app &
+fi
+exit 0
