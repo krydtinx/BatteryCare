@@ -330,13 +330,20 @@ battery-care/
 ├── Shared/                           # SPM package: Command, StatusUpdate, ChargingState
 │   └── Sources/BatteryCareShared/
 ├── debug-tools/                      # C diagnostic tools
-├── packaging/                        # postinstall script for pkg builds
 ├── install.sh                        # Build + install script
-├── package.sh                        # Legacy pkg builder (personal use only)
+├── uninstall.sh                      # Uninstall script
 └── battery-limiter-research.md       # Original SMC key research notes
 ```
 
 > **Important:** Always edit files under `BatteryCare/battery-care-daemon/` for daemon changes. The top-level `Daemon/` directory is an older prototype copy and is not part of any Xcode build target.
+
+---
+
+## Contributing
+
+- **Do not edit `Daemon/`** — it is a dead prototype directory that is not compiled by any Xcode target. All daemon source lives under `BatteryCare/battery-care-daemon/`.
+- **All subsystems are protocol-based** (`SMCServiceProtocol`, `BatteryMonitorProtocol`, etc.) — use mock implementations in tests rather than touching hardware or sockets.
+- **SMC access requires root** — daemon tests that call real SMC APIs will be skipped or fail unless run as root. This is expected.
 
 ---
 
