@@ -47,5 +47,8 @@ sudo launchctl bootstrap system "$PLIST_DEST"
 echo "==> Launching app..."
 sudo -u "$LOGGED_IN_USER" open "$APP_DEST"
 
+echo "==> Cleaning up build artifacts..."
+rm -rf "$DERIVED_DATA"
+
 echo ""
 echo "Done."
