@@ -214,21 +214,10 @@ sudo launchctl bootstrap system /Library/LaunchDaemons/com.batterycare.daemon.pl
 ## Uninstall
 
 ```bash
-# 1. Stop and remove the daemon
-sudo launchctl bootout system /Library/LaunchDaemons/com.batterycare.daemon.plist
-
-# 2. Remove the app
-sudo rm -rf /Applications/BatteryCare.app
-
-# 3. Remove settings and logs
-sudo rm -rf "/Library/Application Support/BatteryCare"
-sudo rm -rf /Library/Logs/BatteryCare
-sudo rm -rf /var/run/battery-care
-
-# 4. Re-enable charging if the daemon left it disabled
-sudo bash -c 'echo -e "#include <stdio.h>\n#include <string.h>\n#include \"BatteryCare/battery-care-daemon/Hardware/ThirdParty/smc.h\"\n#include \"BatteryCare/battery-care-daemon/Hardware/ThirdParty/smc.c\"\nint main(){io_connect_t c=0;SMCOpen(&c);unsigned char b[4]={0};SMCWriteSimple(\"CHTE\",b,4,c);SMCClose(c);}" > /tmp/re.c && clang -o /tmp/re /tmp/re.c -framework IOKit -framework CoreFoundation && /tmp/re'
-# Or simply compile and run debug-tools/reenable_charging.c (see below)
+sudo bash uninstall.sh
 ```
+
+This will re-enable charging, quit the app, stop and remove the daemon, and delete all app data. If charging remains disabled afterwards, compile and run `debug-tools/reenable_charging.c` as root (see Debug Tools below).
 
 ---
 
@@ -335,13 +324,11 @@ battery-care/
 └── battery-limiter-research.md       # Original SMC key research notes
 ```
 
-> **Important:** Always edit files under `BatteryCare/battery-care-daemon/` for daemon changes. The top-level `Daemon/` directory is an older prototype copy and is not part of any Xcode build target.
-
 ---
 
 ## Contributing
 
-- **Do not edit `Daemon/`** — it is a dead prototype directory that is not compiled by any Xcode target. All daemon source lives under `BatteryCare/battery-care-daemon/`.
+- **Daemon source is under `BatteryCare/battery-care-daemon/`** — this is the only compiled daemon target.
 - **All subsystems are protocol-based** (`SMCServiceProtocol`, `BatteryMonitorProtocol`, etc.) — use mock implementations in tests rather than touching hardware or sockets.
 - **SMC access requires root** — daemon tests that call real SMC APIs will be skipped or fail unless run as root. This is expected.
 
