@@ -7,7 +7,7 @@
 
     <key>ProgramArguments</key>
     <array>
-        <string>/Library/Application Support/BatteryCare/battery-care-daemon</string>
+        <string>/Applications/BatteryCare.app/Contents/MacOS/battery-care-daemon</string>
     </array>
 
     <key>UserName</key>

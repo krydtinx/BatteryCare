@@ -13,3 +13,9 @@ DerivedData/
 !default.perspectivev3
 build/
 .build/
+
+# Compiled debug-tools binaries (keep .c sources, ignore compiled output)
+debug-tools/chie_monitor
+debug-tools/probe_smc
+debug-tools/reenable_charging
+debug-tools/test_chte
