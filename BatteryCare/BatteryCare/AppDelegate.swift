@@ -53,18 +53,50 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func updateIcon(state: ChargingState, connected: Bool) {
-        let name: String
+        let image: NSImage?
         if !connected {
-            name = "exclamationmark.triangle"
+            image = NSImage(systemSymbolName: "exclamationmark.triangle", accessibilityDescription: nil)
         } else {
             switch state {
-            case .charging:     name = "bolt.fill"
-            case .limitReached: name = "lock.fill"
-            case .idle:         name = "battery.100"
-            case .disabled:     name = "battery.slash"
+            case .charging:
+                image = NSImage(systemSymbolName: "battery.100.bolt", accessibilityDescription: nil)
+            case .limitReached:
+                image = compositeIcon(base: "battery.0", overlay: "powerplug.fill")
+            case .idle:
+                image = NSImage(systemSymbolName: "battery.100", accessibilityDescription: nil)
+            case .disabled:
+                image = compositeIcon(base: "battery.0", overlay: "pause.fill")
             }
         }
-        statusItem?.button?.image = NSImage(systemSymbolName: name, accessibilityDescription: nil)
+        image?.isTemplate = true
+        statusItem?.button?.image = image
+    }
+
+    private func compositeIcon(base: String, overlay: String) -> NSImage? {
+        let size = CGSize(width: 22, height: 13)
+
+        guard let baseImage = NSImage(systemSymbolName: base, accessibilityDescription: nil),
+              let overlayImage = NSImage(systemSymbolName: overlay, accessibilityDescription: nil) else {
+            return nil
+        }
+
+        let result = NSImage(size: size)
+        result.lockFocus()
+
+        // Draw base battery symbol scaled to fill the canvas
+        baseImage.draw(in: CGRect(origin: .zero, size: size))
+
+        // Draw overlay at ~40% of canvas width, centred horizontally and vertically
+        let overlaySize = CGSize(width: size.width * 0.40, height: size.height * 0.70)
+        let overlayOrigin = CGPoint(
+            x: (size.width - overlaySize.width) / 2 - 1,
+            y: (size.height - overlaySize.height) / 2
+        )
+        overlayImage.draw(in: CGRect(origin: overlayOrigin, size: overlaySize))
+
+        result.unlockFocus()
+        result.isTemplate = true
+        return result
     }
 
     @objc private func togglePopover() {
