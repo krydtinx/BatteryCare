@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
-#include "Daemon/Hardware/ThirdParty/smc.h"
-#include "Daemon/Hardware/ThirdParty/smc.c"
+#include "../BatteryCare/battery-care-daemon/Hardware/ThirdParty/smc.h"
+#include "../BatteryCare/battery-care-daemon/Hardware/ThirdParty/smc.c"
 
 static void probe_key(io_connect_t conn, const char* key) {
     UInt32Char_t k;

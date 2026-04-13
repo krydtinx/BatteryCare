@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
-#include "Daemon/Hardware/ThirdParty/smc.h"
-#include "Daemon/Hardware/ThirdParty/smc.c"
+#include "../BatteryCare/battery-care-daemon/Hardware/ThirdParty/smc.h"
+#include "../BatteryCare/battery-care-daemon/Hardware/ThirdParty/smc.c"
 
 int main(void) {
     io_connect_t conn = 0;

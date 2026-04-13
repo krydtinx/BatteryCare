@@ -6,8 +6,10 @@ struct BatteryCareApp: App {
     @StateObject private var viewModel = BatteryViewModel()
 
     var body: some Scene {
-        MenuBarExtra("BatteryCare", systemImage: "battery.100") {
+        MenuBarExtra {
             MenuBarView(vm: viewModel)
+        } label: {
+            StatusIconView(chargingState: viewModel.chargingState, isConnected: viewModel.isConnected)
         }
         .menuBarExtraStyle(.window)
     }
