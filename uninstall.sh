@@ -6,6 +6,7 @@ echo '{"type":"enableCharging"}' | nc -U /var/run/battery-care/daemon.sock 2>/de
 
 echo "==> Quitting app..."
 osascript -e 'quit app "BatteryCare"' 2>/dev/null || true
+pkill -x BatteryCare 2>/dev/null || true
 sleep 1
 
 echo "==> Stopping daemon..."
