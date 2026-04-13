@@ -1,0 +1,788 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		EB1657A52F8A9815003AA31A /* BatteryCareShared in Frameworks */ = {isa = PBXBuildFile; productRef = EB1657A42F8A9815003AA31A /* BatteryCareShared */; };
+		EB1657A72F8A9821003AA31A /* BatteryCareShared in Frameworks */ = {isa = PBXBuildFile; productRef = EB1657A62F8A9821003AA31A /* BatteryCareShared */; };
+		EB1658212F8AA805003AA31A /* BatteryCareShared in Frameworks */ = {isa = PBXBuildFile; productRef = EB1658202F8AA805003AA31A /* BatteryCareShared */; };
+		EB1658232F8AA837003AA31A /* BatteryCareShared in Frameworks */ = {isa = PBXBuildFile; productRef = EB1658222F8AA837003AA31A /* BatteryCareShared */; };
+		EB1659002F8B0001003AA31A /* battery-care-daemon in CopyFiles */ = {isa = PBXBuildFile; fileRef = EB1657812F8A9506003AA31A /* battery-care-daemon */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		EB1659032F8B0001003AA31A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EB1657672F8A94CB003AA31A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = EB1657802F8A9506003AA31A;
+			remoteInfo = "battery-care-daemon";
+		};
+		EB1657902F8A952E003AA31A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EB1657672F8A94CB003AA31A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = EB16576E2F8A94CB003AA31A;
+			remoteInfo = BatteryCare;
+		};
+		EB16579D2F8A953B003AA31A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EB1657672F8A94CB003AA31A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = EB16576E2F8A94CB003AA31A;
+			remoteInfo = BatteryCare;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		EB16577F2F8A9506003AA31A /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+		EB1657A82F8A9AB9003AA31A /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Contents/Library/LaunchDaemons;
+			dstSubfolderSpec = 1;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EB1659012F8B0001003AA31A /* Embed Daemon */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 6;
+			files = (
+				EB1659002F8B0001003AA31A /* battery-care-daemon in CopyFiles */,
+			);
+			name = "Embed Daemon";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		EB16576F2F8A94CB003AA31A /* BatteryCare.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BatteryCare.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		EB1657812F8A9506003AA31A /* battery-care-daemon */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "battery-care-daemon"; sourceTree = BUILT_PRODUCTS_DIR; };
+		EB16578C2F8A952E003AA31A /* DaemonTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DaemonTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EB1657992F8A953B003AA31A /* AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		EB1658252F8AB163003AA31A /* Exceptions for "battery-care-daemon" folder in "DaemonTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Core/BatteryMonitor.swift,
+				Core/ChargingStateMachine.swift,
+				Core/DaemonCore.swift,
+				Hardware/ThirdParty/smc.c,
+				Hardware/SMCService.swift,
+				IPC/SocketServer.swift,
+				Settings/DaemonSettings.swift,
+				Sleep/SleepWatcher.swift,
+			);
+			target = EB16578B2F8A952E003AA31A /* DaemonTests */;
+		};
+		EB16582D2F8ABC59003AA31A /* Exceptions for "AppTests" folder in "AppTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				BatteryViewModelTests.swift,
+			);
+			target = EB1657982F8A953B003AA31A /* AppTests */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		EB1657AC2F8A9E33003AA31A /* Exceptions for "BatteryCare" folder in "Copy Files" phase from "BatteryCare" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = EB1657A82F8A9AB9003AA31A /* CopyFiles */;
+			membershipExceptions = (
+				com.batterycare.daemon.plist,
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		EB1657712F8A94CB003AA31A /* BatteryCare */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				EB1657AC2F8A9E33003AA31A /* Exceptions for "BatteryCare" folder in "Copy Files" phase from "BatteryCare" target */,
+			);
+			path = BatteryCare;
+			sourceTree = "<group>";
+		};
+		EB1657822F8A9506003AA31A /* battery-care-daemon */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				EB1658252F8AB163003AA31A /* Exceptions for "battery-care-daemon" folder in "DaemonTests" target */,
+			);
+			path = "battery-care-daemon";
+			sourceTree = "<group>";
+		};
+		EB16578D2F8A952E003AA31A /* DaemonTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = DaemonTests;
+			sourceTree = "<group>";
+		};
+		EB16579A2F8A953B003AA31A /* AppTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				EB16582D2F8ABC59003AA31A /* Exceptions for "AppTests" folder in "AppTests" target */,
+			);
+			path = AppTests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		EB16576C2F8A94CB003AA31A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EB1657A72F8A9821003AA31A /* BatteryCareShared in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EB16577E2F8A9506003AA31A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EB1657A52F8A9815003AA31A /* BatteryCareShared in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EB1657892F8A952E003AA31A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EB1658212F8AA805003AA31A /* BatteryCareShared in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EB1657962F8A953B003AA31A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EB1658232F8AA837003AA31A /* BatteryCareShared in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		EB1657662F8A94CB003AA31A = {
+			isa = PBXGroup;
+			children = (
+				EB1657712F8A94CB003AA31A /* BatteryCare */,
+				EB1657822F8A9506003AA31A /* battery-care-daemon */,
+				EB16578D2F8A952E003AA31A /* DaemonTests */,
+				EB16579A2F8A953B003AA31A /* AppTests */,
+				EB1657A32F8A9815003AA31A /* Frameworks */,
+				EB1657702F8A94CB003AA31A /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		EB1657702F8A94CB003AA31A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				EB16576F2F8A94CB003AA31A /* BatteryCare.app */,
+				EB1657812F8A9506003AA31A /* battery-care-daemon */,
+				EB16578C2F8A952E003AA31A /* DaemonTests.xctest */,
+				EB1657992F8A953B003AA31A /* AppTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		EB1657A32F8A9815003AA31A /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		EB16576E2F8A94CB003AA31A /* BatteryCare */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EB16577A2F8A94CD003AA31A /* Build configuration list for PBXNativeTarget "BatteryCare" */;
+			buildPhases = (
+				EB16576B2F8A94CB003AA31A /* Sources */,
+				EB16576C2F8A94CB003AA31A /* Frameworks */,
+				EB16576D2F8A94CB003AA31A /* Resources */,
+				EB1657A82F8A9AB9003AA31A /* CopyFiles */,
+				EB1659012F8B0001003AA31A /* Embed Daemon */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EB1659022F8B0001003AA31A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				EB1657712F8A94CB003AA31A /* BatteryCare */,
+			);
+			name = BatteryCare;
+			packageProductDependencies = (
+				EB1657A62F8A9821003AA31A /* BatteryCareShared */,
+			);
+			productName = BatteryCare;
+			productReference = EB16576F2F8A94CB003AA31A /* BatteryCare.app */;
+			productType = "com.apple.product-type.application";
+		};
+		EB1657802F8A9506003AA31A /* battery-care-daemon */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EB1657852F8A9506003AA31A /* Build configuration list for PBXNativeTarget "battery-care-daemon" */;
+			buildPhases = (
+				EB16577D2F8A9506003AA31A /* Sources */,
+				EB16577E2F8A9506003AA31A /* Frameworks */,
+				EB16577F2F8A9506003AA31A /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				EB1657822F8A9506003AA31A /* battery-care-daemon */,
+			);
+			name = "battery-care-daemon";
+			packageProductDependencies = (
+				EB1657A42F8A9815003AA31A /* BatteryCareShared */,
+			);
+			productName = "battery-care-daemon";
+			productReference = EB1657812F8A9506003AA31A /* battery-care-daemon */;
+			productType = "com.apple.product-type.tool";
+		};
+		EB16578B2F8A952E003AA31A /* DaemonTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EB1657922F8A952E003AA31A /* Build configuration list for PBXNativeTarget "DaemonTests" */;
+			buildPhases = (
+				EB1657882F8A952E003AA31A /* Sources */,
+				EB1657892F8A952E003AA31A /* Frameworks */,
+				EB16578A2F8A952E003AA31A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EB1657912F8A952E003AA31A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				EB16578D2F8A952E003AA31A /* DaemonTests */,
+			);
+			name = DaemonTests;
+			packageProductDependencies = (
+				EB1658202F8AA805003AA31A /* BatteryCareShared */,
+			);
+			productName = DaemonTests;
+			productReference = EB16578C2F8A952E003AA31A /* DaemonTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		EB1657982F8A953B003AA31A /* AppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EB16579F2F8A953B003AA31A /* Build configuration list for PBXNativeTarget "AppTests" */;
+			buildPhases = (
+				EB1657952F8A953B003AA31A /* Sources */,
+				EB1657962F8A953B003AA31A /* Frameworks */,
+				EB1657972F8A953B003AA31A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EB16579E2F8A953B003AA31A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				EB16579A2F8A953B003AA31A /* AppTests */,
+			);
+			name = AppTests;
+			packageProductDependencies = (
+				EB1658222F8AA837003AA31A /* BatteryCareShared */,
+			);
+			productName = AppTests;
+			productReference = EB1657992F8A953B003AA31A /* AppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		EB1657672F8A94CB003AA31A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2640;
+				LastUpgradeCheck = 2640;
+				TargetAttributes = {
+					EB16576E2F8A94CB003AA31A = {
+						CreatedOnToolsVersion = 26.4;
+					};
+					EB1657802F8A9506003AA31A = {
+						CreatedOnToolsVersion = 26.4;
+					};
+					EB16578B2F8A952E003AA31A = {
+						CreatedOnToolsVersion = 26.4;
+					};
+					EB1657982F8A953B003AA31A = {
+						CreatedOnToolsVersion = 26.4;
+						TestTargetID = EB16576E2F8A94CB003AA31A;
+					};
+				};
+			};
+			buildConfigurationList = EB16576A2F8A94CB003AA31A /* Build configuration list for PBXProject "BatteryCare" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = EB1657662F8A94CB003AA31A;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				EB1657A22F8A9585003AA31A /* XCLocalSwiftPackageReference "../Shared" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = EB1657702F8A94CB003AA31A /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				EB16576E2F8A94CB003AA31A /* BatteryCare */,
+				EB1657802F8A9506003AA31A /* battery-care-daemon */,
+				EB16578B2F8A952E003AA31A /* DaemonTests */,
+				EB1657982F8A953B003AA31A /* AppTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		EB16576D2F8A94CB003AA31A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EB16578A2F8A952E003AA31A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EB1657972F8A953B003AA31A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		EB16576B2F8A94CB003AA31A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EB16577D2F8A9506003AA31A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EB1657882F8A952E003AA31A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EB1657952F8A953B003AA31A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		EB1657912F8A952E003AA31A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = EB16576E2F8A94CB003AA31A /* BatteryCare */;
+			targetProxy = EB1657902F8A952E003AA31A /* PBXContainerItemProxy */;
+		};
+		EB16579E2F8A953B003AA31A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = EB16576E2F8A94CB003AA31A /* BatteryCare */;
+			targetProxy = EB16579D2F8A953B003AA31A /* PBXContainerItemProxy */;
+		};
+		EB1659022F8B0001003AA31A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = EB1657802F8A9506003AA31A /* battery-care-daemon */;
+			targetProxy = EB1659032F8B0001003AA31A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		EB1657782F8A94CD003AA31A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		EB1657792F8A94CD003AA31A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		EB16577B2F8A94CD003AA31A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.krydtin.app.BatteryCare;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		EB16577C2F8A94CD003AA31A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				"CODE_SIGN_ENTITLEMENTS[sdk=*]" = BatteryCare/BatteryCare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.krydtin.app.BatteryCare;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		EB1657862F8A9506003AA31A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				"SWIFT_OBJC_BRIDGING_HEADER[arch=*]" = "battery-care-daemon/Hardware/SMCBridgingHeader.h";
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		EB1657872F8A9506003AA31A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				"SWIFT_OBJC_BRIDGING_HEADER[arch=*]" = "battery-care-daemon/Hardware/SMCBridgingHeader.h";
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		EB1657932F8A952E003AA31A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.krydtin.app.DaemonTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				"SWIFT_OBJC_BRIDGING_HEADER[arch=*]" = "battery-care-daemon/Hardware/SMCBridgingHeader.h";
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		EB1657942F8A952E003AA31A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.krydtin.app.DaemonTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				"SWIFT_OBJC_BRIDGING_HEADER[arch=*]" = "battery-care-daemon/Hardware/SMCBridgingHeader.h";
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		EB1657A02F8A953B003AA31A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.krydtin.app.AppTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		EB1657A12F8A953B003AA31A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.krydtin.app.AppTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		EB16576A2F8A94CB003AA31A /* Build configuration list for PBXProject "BatteryCare" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EB1657782F8A94CD003AA31A /* Debug */,
+				EB1657792F8A94CD003AA31A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		EB16577A2F8A94CD003AA31A /* Build configuration list for PBXNativeTarget "BatteryCare" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EB16577B2F8A94CD003AA31A /* Debug */,
+				EB16577C2F8A94CD003AA31A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		EB1657852F8A9506003AA31A /* Build configuration list for PBXNativeTarget "battery-care-daemon" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EB1657862F8A9506003AA31A /* Debug */,
+				EB1657872F8A9506003AA31A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		EB1657922F8A952E003AA31A /* Build configuration list for PBXNativeTarget "DaemonTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EB1657932F8A952E003AA31A /* Debug */,
+				EB1657942F8A952E003AA31A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		EB16579F2F8A953B003AA31A /* Build configuration list for PBXNativeTarget "AppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EB1657A02F8A953B003AA31A /* Debug */,
+				EB1657A12F8A953B003AA31A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		EB1657A22F8A9585003AA31A /* XCLocalSwiftPackageReference "../Shared" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../Shared;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		EB1657A42F8A9815003AA31A /* BatteryCareShared */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EB1657A22F8A9585003AA31A /* XCLocalSwiftPackageReference "../Shared" */;
+			productName = BatteryCareShared;
+		};
+		EB1657A62F8A9821003AA31A /* BatteryCareShared */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EB1657A22F8A9585003AA31A /* XCLocalSwiftPackageReference "../Shared" */;
+			productName = BatteryCareShared;
+		};
+		EB1658202F8AA805003AA31A /* BatteryCareShared */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EB1657A22F8A9585003AA31A /* XCLocalSwiftPackageReference "../Shared" */;
+			productName = BatteryCareShared;
+		};
+		EB1658222F8AA837003AA31A /* BatteryCareShared */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EB1657A22F8A9585003AA31A /* XCLocalSwiftPackageReference "../Shared" */;
+			productName = BatteryCareShared;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = EB1657672F8A94CB003AA31A /* Project object */;
+}
