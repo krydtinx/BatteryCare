@@ -150,7 +150,15 @@ public final class SMCService: SMCServiceProtocol, @unchecked Sendable {
         // If Tahoe, use CHTE for writes (pass-through: stops charging, keeps adapter power).
         if probeKeyReadable("CHIE") {
             logger.info("SMC probe: Tahoe firmware detected via CHIE — using CHTE for charge control")
-            return [.tahoe("CHTE")]
+            var keys: [ChargingKey] = [.tahoe("CHTE")]
+            // CH0K is a companion inhibit key on some Tahoe firmware that updates
+            // ExternalChargeCapable in IORegistry — what macOS reads for the battery icon.
+            // Write it alongside CHTE if available to get the plug icon (not bolt) when paused.
+            if probeKeyReadable("CH0K") {
+                logger.info("SMC probe: CH0K available — will write alongside CHTE for icon fix")
+                keys.append(.inhibit("CH0K"))
+            }
+            return keys
         }
 
         // Legacy (M1/M2/M3): CH0B + CH0C, fallback BCLM
