@@ -120,6 +120,9 @@ public actor DaemonCore {
         for await event in sleepWatcher.events() {
             switch event {
             case .willSleep:
+                // Re-apply SMC state immediately before sleep so powerd cannot override
+                // the charge limit. The sleep assertion is already in the correct state
+                // from the last poll tick; acquire/release here are no-ops.
                 applyState()
             case .hasPoweredOn:
                 applyState()

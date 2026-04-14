@@ -33,13 +33,15 @@ final class MockSocketServer: SocketServerProtocol, @unchecked Sendable {
 final class MockSleepAssertion: SleepAssertionProtocol, @unchecked Sendable {
     var acquireCount = 0
     var releaseCount = 0
-    private var isHeld: Bool { acquireCount > releaseCount }
-    var isActive: Bool { isHeld }
+    var isActive: Bool { acquireCount > releaseCount }
     func acquire() {
-        guard !isHeld else { return }
+        guard !isActive else { return }
         acquireCount += 1
     }
-    func release() { releaseCount += 1 }
+    func release() {
+        guard isActive else { return }
+        releaseCount += 1
+    }
 }
 
 // MARK: - Tests
