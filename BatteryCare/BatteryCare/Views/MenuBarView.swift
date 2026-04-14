@@ -52,7 +52,7 @@ struct MenuBarView: View {
                     Text("\(vm.sailingLower)%").font(.system(size: 18, weight: .semibold, design: .rounded)).monospacedDigit()
                 }
                 Slider(value: Binding(
-                    get: { Double(vm.sailingLower) },
+                    get: { Double(min(vm.sailingLower, max(20, vm.limit))) },
                     set: { vm.setSailingLower(min(Int($0), vm.limit)) }
                 ), in: 20...Double(max(20, vm.limit)), step: 1, onEditingChanged: { isEditing in
                     isEditingSailingLower = isEditing
