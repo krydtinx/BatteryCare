@@ -17,7 +17,7 @@ struct MenuBarView: View {
             // Battery percentage + state
             VStack(spacing: 4) {
                 Text("\(vm.percentage)%")
-                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
                     .monospacedDigit()
                 Text(stateLabel)
                     .font(.caption)
@@ -33,7 +33,7 @@ struct MenuBarView: View {
                 HStack {
                     Text("Charge limit").font(.caption).foregroundStyle(.secondary)
                     Spacer()
-                    Text("\(vm.limit)%").font(.caption).monospacedDigit()
+                    Text("\(vm.limit)%").font(.system(size: 18, weight: .semibold, design: .rounded)).monospacedDigit()
                 }
                 Slider(value: Binding(
                     get: { Double(vm.limit) },
