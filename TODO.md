@@ -14,7 +14,11 @@
 
 ## Features (from research plan)
 
-- [ ] Prevent idle sleep during active charging session (`IOPMAssertionCreateWithName`)
+- [x] Prevent idle sleep during active charging session (`IOPMAssertionCreateWithName`)
+  - Prevents idle-sleep only during `.charging` state; released at `.limitReached`, `.idle`, or `.disabled`
+  - `SleepAssertionManager` wraps `IOPMAssertionCreateWithName`/`IOPMAssertionRelease`
+  - `DaemonCore` calls `acquire()`/`release()` in `applyState()` based on charging state
+  - 5-second wake-retry to outlast powerd SMC re-initialization
 - [ ] Discharge feature (drain to target % while plugged in — `AC-W` / `CH0I` SMC keys)
 - [ ] Sailing mode (lower bound to prevent micro-charge/discharge cycling)
 - [ ] Heat protection (pause charging when battery temp > threshold, `TB0T` key)

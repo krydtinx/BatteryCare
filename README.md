@@ -145,7 +145,7 @@ Sent as a response to any command and also pushed proactively after every poll t
 `SleepWatcher` registers with `IORegisterForSystemPower` and exposes an `AsyncStream<SleepEvent>`. `DaemonCore` listens in a dedicated `sleepLoop`:
 
 - **`willSleep`**: Re-apply current SMC state immediately. This matters because macOS `powerd` often enables charging right before sleep (so the battery reaches 100% overnight). Re-applying the limit just before sleep blocks this.
-- **`hasPoweredOn`**: Re-apply state and run a poll. The SMC can reset after hibernation; reapplying ensures limits survive wake.
+- **`hasPoweredOn`**: Re-apply state and run a poll. Then schedule a delayed re-poll 5 seconds later. This is necessary because macOS `powerd` briefly re-initializes SMC state after wake, which can temporarily override the daemon's charging limit. The 5-second retry ensures the daemon outlasts the powerd initialization window without blocking on the main wake-event path.
 
 `IOAllowPowerChange` is called synchronously in the IOKit callback before returning, which is required — if the callback does not ack within ~30 seconds, macOS force-sleeps regardless.
 
