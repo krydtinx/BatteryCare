@@ -10,6 +10,7 @@ public actor DaemonCore {
 
     private var settings: DaemonSettings
     private var stateMachine = ChargingStateMachine()
+    private var wakeRetryTask: Task<Void, Never>?
 
     // MARK: - Dependencies
 
@@ -127,6 +128,14 @@ public actor DaemonCore {
             case .hasPoweredOn:
                 applyState()
                 pollOnce()
+                // powerd may re-enable charging briefly after wake; cancel any pending retry
+                // and schedule a fresh one to re-enforce our state once powerd settles.
+                wakeRetryTask?.cancel()
+                wakeRetryTask = Task {
+                    try? await Task.sleep(for: .seconds(5))
+                    guard !Task.isCancelled else { return }
+                    await self.pollOnce()
+                }
             }
         }
     }
