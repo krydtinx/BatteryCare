@@ -4,6 +4,7 @@ import BatteryCareShared
 struct MenuBarView: View {
     @ObservedObject var vm: BatteryViewModel
     @State private var showOptimizedWarning: Bool = false
+    @State private var isEditingSailingLower: Bool = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -52,8 +53,10 @@ struct MenuBarView: View {
                 }
                 Slider(value: Binding(
                     get: { Double(vm.sailingLower) },
-                    set: { vm.setSailingLower(Int($0)) }
-                ), in: 20...Double(max(20, vm.limit)), step: 1)
+                    set: { vm.setSailingLower(min(Int($0), vm.limit)) }
+                ), in: 20...Double(max(20, vm.limit)), step: 1, onEditingChanged: { isEditing in
+                    isEditingSailingLower = isEditing
+                })
             }
             .padding(.horizontal, 12)
             .padding(.bottom, 8)
