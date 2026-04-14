@@ -30,6 +30,17 @@ public struct DaemonSettings: Codable {
         self.allowedUID = allowedUID
     }
 
+    // Custom decoder so that settings.json written before sailingLower existed
+    // still loads correctly (missing key → defaults to limit, preserving old behaviour).
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        limit = try c.decode(Int.self, forKey: .limit)
+        sailingLower = try c.decodeIfPresent(Int.self, forKey: .sailingLower) ?? limit
+        pollingInterval = try c.decode(Int.self, forKey: .pollingInterval)
+        isChargingDisabled = try c.decode(Bool.self, forKey: .isChargingDisabled)
+        allowedUID = try c.decode(uid_t.self, forKey: .allowedUID)
+    }
+
     // MARK: - Persistence
 
     private static let storageURL: URL = {
