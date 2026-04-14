@@ -12,6 +12,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var popover: NSPopover?
     private var cancellables = Set<AnyCancellable>()
 
+    func applicationWillTerminate(_ notification: Notification) {
+        // Re-enable charging so quitting the app restores normal behavior.
+        // setLimit(100) is preferred over enableCharging: it also persists the 100% limit
+        // to settings.json, so the daemon won't re-apply the old limit if restarted later.
+        MainActor.assumeIsolated {
+            DaemonClient.shared.sendNow(.setLimit(percentage: 100))
+        }
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)  // hide from Dock
         setupStatusItem()

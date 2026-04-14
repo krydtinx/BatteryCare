@@ -2,9 +2,23 @@
 set -e
 
 echo "==> Re-enabling charging (before stopping daemon)..."
-echo '{"type":"enableCharging"}' | nc -U /var/run/battery-care/daemon.sock 2>/dev/null || true
+# Use setLimit(100) so the daemon also persists the 100% limit to settings.json.
+# If the daemon is restarted later it won't re-apply a stale low limit.
+SOCKET=/var/run/battery-care/daemon.sock
+if [ -S "$SOCKET" ]; then
+    echo '{"type":"setLimit","percentage":100}' | nc -U "$SOCKET" 2>/dev/null || true
+    sleep 1  # give daemon time to process before we kill it
+else
+    echo "  Socket not found — daemon may already be stopped."
+    # Fallback: re-enable charging directly via the debug tool if available
+    REENABLE="$(dirname "$0")/debug-tools/reenable_charging"
+    if [ -x "$REENABLE" ]; then
+        echo "  Running reenable_charging fallback..."
+        sudo "$REENABLE" || true
+    fi
+fi
 
-echo "==> Quitting app..."
+echo "==> Quitting app (will also send setLimit(100) via applicationWillTerminate)..."
 osascript -e 'quit app "BatteryCare"' 2>/dev/null || true
 pkill -x BatteryCare 2>/dev/null || true
 sleep 1

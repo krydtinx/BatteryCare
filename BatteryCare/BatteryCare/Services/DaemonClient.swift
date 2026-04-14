@@ -86,6 +86,11 @@ public final class DaemonClient: ObservableObject, DaemonClientProtocol {
 
     /// Send a command; reply arrives as a broadcast StatusUpdate via the read loop.
     public func send(_ command: Command) async {
+        sendNow(command)
+    }
+
+    /// Synchronous variant for use in termination handlers where `await` is not available.
+    public func sendNow(_ command: Command) {
         fdLock.lock()
         let currentFD = fd
         fdLock.unlock()
