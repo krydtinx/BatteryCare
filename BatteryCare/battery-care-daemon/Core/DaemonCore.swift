@@ -125,8 +125,13 @@ public actor DaemonCore {
                 // from the last poll tick; acquire/release here are no-ops.
                 applyState()
             case .hasPoweredOn:
-                applyState()
-                pollOnce()
+                // Start a detached task for the grace period so we don't block the sleep loop
+                Task {
+                    // Wait 30s for the "macOS power-up storm" (powerd initialization) to settle
+                    try? await Task.sleep(for: .seconds(30))
+                    await self.applyState()
+                    await self.pollOnce()
+                }
             }
         }
     }
