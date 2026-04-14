@@ -1,9 +1,10 @@
 public enum Command: Sendable {
     case getStatus
-    case setLimit(percentage: Int)        // clamped 20–100 by daemon
+    case setLimit(percentage: Int)          // clamped 20–100 by daemon
+    case setSailingLower(percentage: Int)   // clamped 20–limit by daemon
     case enableCharging
     case disableCharging
-    case setPollingInterval(seconds: Int) // clamped 1–30 by daemon
+    case setPollingInterval(seconds: Int)   // clamped 1–30 by daemon
 }
 
 extension Command: Codable {
@@ -16,6 +17,9 @@ extension Command: Codable {
             try c.encode("getStatus", forKey: .type)
         case .setLimit(let p):
             try c.encode("setLimit", forKey: .type)
+            try c.encode(p, forKey: .percentage)
+        case .setSailingLower(let p):
+            try c.encode("setSailingLower", forKey: .type)
             try c.encode(p, forKey: .percentage)
         case .enableCharging:
             try c.encode("enableCharging", forKey: .type)
@@ -33,9 +37,11 @@ extension Command: Codable {
         switch type {
         case "getStatus":           self = .getStatus
         case "enableCharging":      self = .enableCharging
-        case "disableCharging":     self = .disableCharging
+        case "disableCharging":    self = .disableCharging
         case "setLimit":
             self = .setLimit(percentage: try c.decode(Int.self, forKey: .percentage))
+        case "setSailingLower":
+            self = .setSailingLower(percentage: try c.decode(Int.self, forKey: .percentage))
         case "setPollingInterval":
             self = .setPollingInterval(seconds: try c.decode(Int.self, forKey: .seconds))
         default:

@@ -15,12 +15,13 @@ public final class BatteryViewModel: ObservableObject {
     @Published public private(set) var isPluggedIn: Bool = false
     @Published public private(set) var chargingState: ChargingState = .idle
     @Published public private(set) var limit: Int = 80
+    @Published public private(set) var sailingLower: Int = 80
     @Published public private(set) var pollingInterval: Int = 5
     @Published public private(set) var isConnected: Bool = false
     @Published public private(set) var errorMessage: String? = nil
     @Published public private(set) var isOptimizedChargingEnabled: Bool = false
 
-    // MARK: - Dependencies (injectable for testing)
+    // MARK: - Dependencies
 
     private let client: DaemonClientProtocol
 
@@ -41,6 +42,10 @@ public final class BatteryViewModel: ObservableObject {
 
     public func setLimit(_ value: Int) {
         Task { await client.send(.setLimit(percentage: value)) }
+    }
+
+    public func setSailingLower(_ value: Int) {
+        Task { await client.send(.setSailingLower(percentage: value)) }
     }
 
     public func setPollingInterval(_ value: Int) {
@@ -79,6 +84,7 @@ public final class BatteryViewModel: ObservableObject {
         isPluggedIn = update.isPluggedIn
         chargingState = update.chargingState
         limit = update.limit
+        sailingLower = update.sailingLower
         pollingInterval = update.pollingInterval
 
         if let error = update.error {
@@ -96,7 +102,7 @@ public final class BatteryViewModel: ObservableObject {
             process.arguments = ["-g", "batt"]
             let pipe = Pipe()
             process.standardOutput = pipe
-            process.standardError = Pipe()  // suppress stderr
+            process.standardError = Pipe()
             do {
                 try process.run()
                 process.waitUntilExit()

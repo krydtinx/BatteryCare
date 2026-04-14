@@ -12,6 +12,7 @@ public struct StatusUpdate: Codable, Sendable {
     public let chargingState: ChargingState
     public let mode: DaemonMode
     public let limit: Int
+    public let sailingLower: Int
     public let pollingInterval: Int
     public let error: DaemonError?
     public let errorDetail: String?
@@ -23,6 +24,7 @@ public struct StatusUpdate: Codable, Sendable {
         chargingState: ChargingState,
         mode: DaemonMode = .normal,
         limit: Int,
+        sailingLower: Int,
         pollingInterval: Int,
         error: DaemonError? = nil,
         errorDetail: String? = nil
@@ -33,6 +35,7 @@ public struct StatusUpdate: Codable, Sendable {
         self.chargingState = chargingState
         self.mode = mode
         self.limit = limit
+        self.sailingLower = sailingLower
         self.pollingInterval = pollingInterval
         self.error = error
         self.errorDetail = errorDetail

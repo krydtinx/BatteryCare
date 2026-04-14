@@ -5,6 +5,9 @@ import Foundation
 public struct DaemonSettings: Codable {
     /// Charge limit percentage, clamped 20–100 by DaemonCore before saving.
     public var limit: Int
+    /// Sailing lower bound, clamped 20–limit by DaemonCore before saving.
+    /// When sailingLower == limit (default), there is no sailing zone and old behaviour is preserved.
+    public var sailingLower: Int
     /// How often DaemonCore polls battery state, clamped 1–30 by DaemonCore before saving.
     public var pollingInterval: Int
     /// When true the daemon actively keeps charging disabled regardless of percentage.
@@ -15,11 +18,13 @@ public struct DaemonSettings: Codable {
 
     public init(
         limit: Int = 80,
+        sailingLower: Int = 80,
         pollingInterval: Int = 5,
         isChargingDisabled: Bool = false,
         allowedUID: uid_t = 0
     ) {
         self.limit = limit
+        self.sailingLower = sailingLower
         self.pollingInterval = pollingInterval
         self.isChargingDisabled = isChargingDisabled
         self.allowedUID = allowedUID

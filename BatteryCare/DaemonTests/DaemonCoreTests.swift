@@ -1,9 +1,6 @@
 import XCTest
 import BatteryCareShared
 
-// DaemonCore, SMCServiceProtocol, BatteryMonitorProtocol, SleepWatcherProtocol
-// are in the Daemon module — added to DaemonTests target in Xcode.
-
 // MARK: - Mocks
 
 final class MockSMCService: SMCServiceProtocol, @unchecked Sendable {
@@ -50,6 +47,7 @@ final class DaemonCoreTests: XCTestCase {
 
     private func makeCore(
         limit: Int = 80,
+        sailingLower: Int = 80,
         pollingInterval: Int = 5,
         isChargingDisabled: Bool = false,
         smc: MockSMCService = MockSMCService(),
@@ -58,6 +56,7 @@ final class DaemonCoreTests: XCTestCase {
     ) -> DaemonCore {
         let settings = DaemonSettings(
             limit: limit,
+            sailingLower: sailingLower,
             pollingInterval: pollingInterval,
             isChargingDisabled: isChargingDisabled,
             allowedUID: getuid()
@@ -175,5 +174,42 @@ final class DaemonCoreTests: XCTestCase {
         let core = makeCore(limit: 80, battery: battery, sleepAssertion: assertion)
         _ = await core.handle(.disableCharging)
         XCTAssertFalse(assertion.isActive)
+    }
+
+    // MARK: - 12. setSailingLower clamps to [20, limit]
+
+    func testSetSailingLowerClampsToLimit() async {
+        let core = makeCore(limit: 80)
+        let update = await core.handle(.setSailingLower(percentage: 90))
+        XCTAssertEqual(update.sailingLower, 80)
+    }
+
+    func testSetSailingLowerClampsToMinimum() async {
+        let core = makeCore(limit: 80)
+        let update = await core.handle(.setSailingLower(percentage: 10))
+        XCTAssertEqual(update.sailingLower, 20)
+    }
+
+    func testSetSailingLowerAcceptsValidValue() async {
+        let core = makeCore(limit: 80)
+        let update = await core.handle(.setSailingLower(percentage: 60))
+        XCTAssertEqual(update.sailingLower, 60)
+    }
+
+    // MARK: - 13. setLimit lowers sailingLower when needed
+
+    func testSetLimitClampsSailingLower() async {
+        let core = makeCore(limit: 80, sailingLower: 70)
+        _ = await core.handle(.setSailingLower(percentage: 70))
+        let update = await core.handle(.setLimit(percentage: 60))
+        XCTAssertEqual(update.sailingLower, 60)
+    }
+
+    // MARK: - 14. StatusUpdate includes sailingLower
+
+    func testStatusUpdateIncludesSailingLower() async {
+        let core = makeCore(limit: 80, sailingLower: 65)
+        let update = await core.handle(.getStatus)
+        XCTAssertEqual(update.sailingLower, 65)
     }
 }

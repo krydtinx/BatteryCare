@@ -41,7 +41,22 @@ struct MenuBarView: View {
                 ), in: 20...100, step: 1)
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.top, 8)
+
+            // Sailing lower slider
+            VStack(spacing: 4) {
+                HStack {
+                    Text("Sailing lower").font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    Text("\(vm.sailingLower)%").font(.system(size: 18, weight: .semibold, design: .rounded)).monospacedDigit()
+                }
+                Slider(value: Binding(
+                    get: { Double(vm.sailingLower) },
+                    set: { vm.setSailingLower(Int($0)) }
+                ), in: 20...Double(max(20, vm.limit)), step: 1)
+            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 8)
 
             // Poll interval picker
             VStack(spacing: 4) {

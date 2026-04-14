@@ -10,7 +10,6 @@ public actor DaemonCore {
 
     private var settings: DaemonSettings
     private var stateMachine = ChargingStateMachine()
-    private var wakeRetryTask: Task<Void, Never>?
 
     // MARK: - Dependencies
 
@@ -40,7 +39,6 @@ public actor DaemonCore {
 
     // MARK: - Run
 
-    /// Start all subsystems. Throws if a subsystem fails; cancels all others.
     public func run() async throws {
         defer { sleepAssertion.release() }
         try smc.open()
@@ -54,11 +52,11 @@ public actor DaemonCore {
         try await withThrowingTaskGroup(of: Void.self) { group in
             group.addTask { try await self.pollingLoop() }
             group.addTask { await self.sleepLoop() }
-            for try await _ in group {}  // throws on first error; group auto-cancels remaining on scope exit
+            for try await _ in group {}
         }
     }
 
-    // MARK: - Command handler (called by SocketServer per incoming command)
+    // MARK: - Command handler
 
     public func handle(_ command: Command) async -> StatusUpdate {
         switch command {
@@ -68,11 +66,27 @@ public actor DaemonCore {
 
         case .setLimit(let p):
             settings.limit = max(20, min(100, p))
+            settings.sailingLower = min(settings.sailingLower, settings.limit)
             try? settings.save()
             if let reading = try? battery.read() {
-                stateMachine.evaluate(reading: reading, limit: settings.limit, isDisabled: settings.isChargingDisabled)
+                stateMachine.evaluate(reading: reading, limit: settings.limit,
+                                      sailingLower: settings.sailingLower,
+                                      isDisabled: settings.isChargingDisabled)
                 let smcError = applyState()
-                // Re-read battery after SMC write so the response reflects the new charging state
+                let update = makeStatusUpdate(error: smcError)
+                socketServer.broadcast(update)
+                return update
+            }
+            return makeStatusUpdate()
+
+        case .setSailingLower(let p):
+            settings.sailingLower = max(20, min(settings.limit, p))
+            try? settings.save()
+            if let reading = try? battery.read() {
+                stateMachine.evaluate(reading: reading, limit: settings.limit,
+                                      sailingLower: settings.sailingLower,
+                                      isDisabled: settings.isChargingDisabled)
+                let smcError = applyState()
                 let update = makeStatusUpdate(error: smcError)
                 socketServer.broadcast(update)
                 return update
@@ -128,14 +142,6 @@ public actor DaemonCore {
             case .hasPoweredOn:
                 applyState()
                 pollOnce()
-                // powerd may re-enable charging briefly after wake; cancel any pending retry
-                // and schedule a fresh one to re-enforce our state once powerd settles.
-                wakeRetryTask?.cancel()
-                wakeRetryTask = Task {
-                    try? await Task.sleep(for: .seconds(5))
-                    guard !Task.isCancelled else { return }
-                    await self.pollOnce()
-                }
             }
         }
     }
@@ -148,9 +154,10 @@ public actor DaemonCore {
             stateMachine.evaluate(
                 reading: reading,
                 limit: settings.limit,
+                sailingLower: settings.sailingLower,
                 isDisabled: settings.isChargingDisabled
             )
-            applyState()  // Always enforce — macOS powerd can re-enable charging between polls
+            applyState()
             socketServer.broadcast(makeStatusUpdate(from: reading))
         } catch {
             let update = makeStatusUpdate(error: .batteryReadFailed, errorDetail: "\(error)")
@@ -164,7 +171,8 @@ public actor DaemonCore {
             stateMachine.forceDisable()
             try? smc.perform(.disableCharging)
         } else {
-            stateMachine.evaluate(reading: reading, limit: settings.limit, isDisabled: false)
+            stateMachine.evaluate(reading: reading, limit: settings.limit,
+                                  sailingLower: settings.sailingLower, isDisabled: false)
             applyState()
         }
     }
@@ -207,6 +215,7 @@ public actor DaemonCore {
             chargingState: stateMachine.state,
             mode: .normal,
             limit: settings.limit,
+            sailingLower: settings.sailingLower,
             pollingInterval: settings.pollingInterval,
             error: error,
             errorDetail: errorDetail
@@ -220,7 +229,7 @@ private extension StatusUpdate {
     static var empty: StatusUpdate {
         StatusUpdate(
             currentPercentage: 0, isCharging: false, isPluggedIn: false,
-            chargingState: .idle, mode: .normal, limit: 80, pollingInterval: 5
+            chargingState: .idle, mode: .normal, limit: 80, sailingLower: 80, pollingInterval: 5
         )
     }
 }
