@@ -17,6 +17,7 @@ public actor DaemonCore {
     private let battery: BatteryMonitorProtocol
     private let sleepWatcher: SleepWatcherProtocol
     private let socketServer: SocketServerProtocol
+    private let sleepAssertion: SleepAssertionProtocol
 
     // MARK: - Init
 
@@ -25,19 +26,22 @@ public actor DaemonCore {
         smc: SMCServiceProtocol,
         battery: BatteryMonitorProtocol,
         sleepWatcher: SleepWatcherProtocol,
-        socketServer: SocketServerProtocol
+        socketServer: SocketServerProtocol,
+        sleepAssertion: SleepAssertionProtocol
     ) {
         self.settings = settings
         self.smc = smc
         self.battery = battery
         self.sleepWatcher = sleepWatcher
         self.socketServer = socketServer
+        self.sleepAssertion = sleepAssertion
     }
 
     // MARK: - Run
 
     /// Start all subsystems. Throws if a subsystem fails; cancels all others.
     public func run() async throws {
+        defer { sleepAssertion.release() }
         try smc.open()
         deriveInitialState()
 
@@ -155,6 +159,12 @@ public actor DaemonCore {
 
     @discardableResult
     private func applyState() -> DaemonError? {
+        if stateMachine.state == .charging {
+            sleepAssertion.acquire()
+        } else {
+            sleepAssertion.release()
+        }
+
         switch stateMachine.state {
         case .charging:
             do { try smc.perform(.enableCharging) } catch {

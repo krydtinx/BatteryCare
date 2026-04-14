@@ -25,6 +25,7 @@ guard settings.allowedUID != 0 else {
 let smc = SMCService()
 let battery = BatteryMonitor()
 let sleepWatcher = SleepWatcher()
+let sleepAssertion = SleepAssertionManager()
 let socketServer = SocketServer(
     socketPath: "/var/run/battery-care/daemon.sock",
     allowedUID: settings.allowedUID
@@ -35,7 +36,8 @@ let core = DaemonCore(
     smc: smc,
     battery: battery,
     sleepWatcher: sleepWatcher,
-    socketServer: socketServer
+    socketServer: socketServer,
+    sleepAssertion: sleepAssertion
 )
 
 // Launch core on a detached task; crash on unrecoverable error

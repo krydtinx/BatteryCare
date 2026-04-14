@@ -30,6 +30,18 @@ final class MockSocketServer: SocketServerProtocol, @unchecked Sendable {
     func stop() {}
 }
 
+final class MockSleepAssertion: SleepAssertionProtocol, @unchecked Sendable {
+    var acquireCount = 0
+    var releaseCount = 0
+    private var isHeld: Bool { acquireCount > releaseCount }
+    var isActive: Bool { isHeld }
+    func acquire() {
+        guard !isHeld else { return }
+        acquireCount += 1
+    }
+    func release() { releaseCount += 1 }
+}
+
 // MARK: - Tests
 
 final class DaemonCoreTests: XCTestCase {
@@ -39,7 +51,8 @@ final class DaemonCoreTests: XCTestCase {
         pollingInterval: Int = 5,
         isChargingDisabled: Bool = false,
         smc: MockSMCService = MockSMCService(),
-        battery: MockBatteryMonitor = MockBatteryMonitor()
+        battery: MockBatteryMonitor = MockBatteryMonitor(),
+        sleepAssertion: MockSleepAssertion = MockSleepAssertion()
     ) -> DaemonCore {
         let settings = DaemonSettings(
             limit: limit,
@@ -52,7 +65,8 @@ final class DaemonCoreTests: XCTestCase {
             smc: smc,
             battery: battery,
             sleepWatcher: MockSleepWatcher(),
-            socketServer: MockSocketServer()
+            socketServer: MockSocketServer(),
+            sleepAssertion: sleepAssertion
         )
     }
 
@@ -115,5 +129,49 @@ final class DaemonCoreTests: XCTestCase {
         let core = makeCore(smc: smc)
         _ = await core.handle(.disableCharging)
         XCTAssertEqual(smc.lastWrite, .disableCharging)
+    }
+
+    // MARK: - 8. Assertion acquired during charging
+
+    func testAssertionAcquiredDuringCharging() async {
+        let assertion = MockSleepAssertion()
+        let battery = MockBatteryMonitor()
+        battery.reading = BatteryReading(percentage: 60, isCharging: true, isPluggedIn: true)
+        let core = makeCore(limit: 80, battery: battery, sleepAssertion: assertion)
+        _ = await core.handle(.setLimit(percentage: 80))
+        XCTAssertTrue(assertion.isActive)
+    }
+
+    // MARK: - 9. Assertion released at limit reached
+
+    func testAssertionReleasedAtLimitReached() async {
+        let assertion = MockSleepAssertion()
+        let battery = MockBatteryMonitor()
+        battery.reading = BatteryReading(percentage: 80, isCharging: false, isPluggedIn: true)
+        let core = makeCore(limit: 80, battery: battery, sleepAssertion: assertion)
+        _ = await core.handle(.setLimit(percentage: 80))
+        XCTAssertFalse(assertion.isActive)
+    }
+
+    // MARK: - 10. Assertion released when idle (unplugged)
+
+    func testAssertionReleasedWhenIdle() async {
+        let assertion = MockSleepAssertion()
+        let battery = MockBatteryMonitor()
+        battery.reading = BatteryReading(percentage: 60, isCharging: false, isPluggedIn: false)
+        let core = makeCore(limit: 80, battery: battery, sleepAssertion: assertion)
+        _ = await core.handle(.setLimit(percentage: 80))
+        XCTAssertFalse(assertion.isActive)
+    }
+
+    // MARK: - 11. Assertion released when charging disabled
+
+    func testAssertionReleasedWhenChargingDisabled() async {
+        let assertion = MockSleepAssertion()
+        let battery = MockBatteryMonitor()
+        battery.reading = BatteryReading(percentage: 60, isCharging: true, isPluggedIn: true)
+        let core = makeCore(limit: 80, battery: battery, sleepAssertion: assertion)
+        _ = await core.handle(.disableCharging)
+        XCTAssertFalse(assertion.isActive)
     }
 }

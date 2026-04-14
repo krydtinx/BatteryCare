@@ -87,6 +87,7 @@
 				Hardware/ThirdParty/smc.c,
 				Hardware/SMCService.swift,
 				IPC/SocketServer.swift,
+				Power/SleepAssertionManager.swift,
 				Settings/DaemonSettings.swift,
 				Sleep/SleepWatcher.swift,
 			);
