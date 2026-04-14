@@ -51,10 +51,11 @@ struct MenuBarView: View {
                     Spacer()
                     Text("\(vm.sailingLower)%").font(.system(size: 18, weight: .semibold, design: .rounded)).monospacedDigit()
                 }
+                let maxRange = Double(max(21, vm.limit))  // Ensure range width >= 1 to avoid SwiftUI crash
                 Slider(value: Binding(
                     get: { Double(min(vm.sailingLower, max(20, vm.limit))) },
                     set: { vm.setSailingLower(min(Int($0), vm.limit)) }
-                ), in: 20...Double(max(20, vm.limit)), step: 1, onEditingChanged: { isEditing in
+                ), in: 20...maxRange, step: 1, onEditingChanged: { isEditing in
                     isEditingSailingLower = isEditing
                 })
             }
