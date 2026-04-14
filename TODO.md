@@ -23,6 +23,12 @@
   - Design decision: This is correct behavior (UI in sync with daemon), not a bug
   - May improve UX by showing a visual indicator that lower is constrained by limit
 
+- [ ] **Sleep prevention not blocking over-charge when closing lid**
+  - Scenario: Battery at 57%, upper/lower bounds set to 60%, close lid
+  - Observed: Battery charges past 60% limit while in low-power sleep state
+  - Expected: Sleep watcher triggers on lid close; state machine holds at limit (60%)
+  - Root cause: Unknown — investigate sleep watcher timing with battery polling, wake event timing, CHTE persistence across sleep/wake
+
 ## Features (from research plan)
 
 - [x] Prevent idle sleep during active charging session (`IOPMAssertionCreateWithName`)
@@ -30,6 +36,10 @@
   - `SleepAssertionManager` wraps `IOPMAssertionCreateWithName`/`IOPMAssertionRelease`
   - `DaemonCore` calls `acquire()`/`release()` in `applyState()` based on charging state
   - 5-second wake-retry to outlast powerd SMC re-initialization
+- [ ] **Restore limits on app reopen**
+  - AS-IS: Setting limit to 100% before closing app; reopening shows limit still at 100%
+  - TO-BE: Remember previous upper/lower limits; set both to 100% on app quit; restore original values on reopen
+  - Requires: Save pre-100% limits to settings.json; restore from settings on DaemonClient connection
 - [ ] Discharge feature (drain to target % while plugged in — `AC-W` / `CH0I` SMC keys)
 - [x] Sailing mode (lower bound to prevent micro-charge/discharge cycling)
   - Hysteresis state machine: battery < lower → charge to upper; in zone → stay in current direction
