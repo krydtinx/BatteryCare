@@ -163,6 +163,12 @@ Daemon logs are written to:
 - `/Library/Logs/BatteryCare/daemon.log`
 - `/Library/Logs/BatteryCare/daemon-error.log`
 
+### App Quit Behavior
+
+When the user quits BatteryCare (via menu, Cmd-Q, or Force Quit), `applicationWillTerminate` sends `setLimit(100)` to the daemon synchronously. This restores normal 100% charging and persists the 100% limit to `settings.json`, ensuring that if the daemon is restarted later it will not re-apply a stale lower limit.
+
+The daemon persists across app quit, allowing the limit to remain in effect or to be recovered if the app is relaunched.
+
 ---
 
 ## Requirements
@@ -232,7 +238,16 @@ sudo launchctl bootstrap system /Library/LaunchDaemons/com.batterycare.daemon.pl
 sudo bash uninstall.sh
 ```
 
-This will re-enable charging, quit the app, stop and remove the daemon, and delete all app data. If charging remains disabled afterwards, compile and run `debug-tools/reenable_charging.c` as root (see Debug Tools below).
+This will re-enable charging, quit the app, stop and remove the daemon, and delete all app data.
+
+**Charging re-enablement path:**
+
+1. `uninstall.sh` sends `setLimit(100)` to the daemon via socket (restores 100% limit and clears any lower limit from `settings.json`)
+2. `uninstall.sh` waits 1 second for the daemon to process the command
+3. `uninstall.sh` quits the app; `applicationWillTerminate` also sends `setLimit(100)` as a safety net
+4. Fallback: if the socket is unavailable (daemon already stopped), `uninstall.sh` runs the compiled `debug-tools/reenable_charging` tool directly
+
+If charging remains disabled afterwards, compile and run `debug-tools/reenable_charging.c` as root (see Debug Tools below).
 
 ---
 
