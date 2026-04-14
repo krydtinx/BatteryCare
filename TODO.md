@@ -13,8 +13,9 @@
   - Added `sendNow()` synchronous variant to `DaemonClient`; `send()` delegates to it
 
 - [x] **App crash when reducing upper limit below 21**
-  - Fixed: MenuBarView sailing lower slider now clamps value to limit in setter
-  - Prevents SwiftUI crash when range becomes invalid during constraint updates
+  - Fixed: MenuBarView sailing lower slider ensures range width ≥ 1 (min max=21)
+  - Also clamps slider value to current limit in setter
+  - Prevents SwiftUI zero-width range crash (20...20)
   
 - [ ] **Sailing slider UI: lower bound visually "jumps" when reducing upper limit**
   - Current behavior: dragging charge limit down causes sailingLower to snap down due to daemon constraint
