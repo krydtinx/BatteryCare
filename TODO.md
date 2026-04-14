@@ -12,15 +12,15 @@
   - `applicationWillTerminate(_:)` in `AppDelegate` calls `DaemonClient.shared.sendNow(.setLimit(percentage: 100))`
   - Added `sendNow()` synchronous variant to `DaemonClient`; `send()` delegates to it
 
-- [ ] **Sailing slider UI: lower bound auto-moves when adjusting upper limit**
-  - Current behavior: dragging charge limit slider clamps sailingLower automatically (daemon side)
-  - Desired: UI should show sailingLower staying fixed; only clamp if user explicitly exceeds limit
-  - Affects: MenuBarView slider binding for both limit and sailingLower
-
-- [ ] **App crash when reducing upper limit below 21**
-  - Reducing limit via slider to <20 causes force close (likely clamping logic or constraint violation)
-  - Daemon clamps to 20, but UI may not handle the mismatch correctly
-  - Affects: MenuBarView limit slider interaction / BatteryViewModel apply logic
+- [x] **App crash when reducing upper limit below 21**
+  - Fixed: MenuBarView sailing lower slider now clamps value to limit in setter
+  - Prevents SwiftUI crash when range becomes invalid during constraint updates
+  
+- [ ] **Sailing slider UI: lower bound visually "jumps" when reducing upper limit**
+  - Current behavior: dragging charge limit down causes sailingLower to snap down due to daemon constraint
+  - Why: Daemon enforces invariant `sailingLower ≤ limit`; UI reflects this via StatusUpdate
+  - Design decision: This is correct behavior (UI in sync with daemon), not a bug
+  - May improve UX by showing a visual indicator that lower is constrained by limit
 
 ## Features (from research plan)
 
