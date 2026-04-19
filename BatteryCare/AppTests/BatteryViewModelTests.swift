@@ -141,10 +141,6 @@ final class BatteryViewModelTests: XCTestCase {
         }
         XCTAssertTrue(hasSetLimit, "Expected setLimit(75) to be sent")
         XCTAssertTrue(hasSetSailingLower, "Expected setSailingLower(60) to be sent")
-
-        // Clean up
-        UserDefaults.standard.removeObject(forKey: "com.batterycare.savedLimit")
-        UserDefaults.standard.removeObject(forKey: "com.batterycare.savedSailingLower")
     }
 
     // MARK: - 7. Restore limits: does nothing on connect when UserDefaults is empty
