@@ -17,6 +17,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // setLimit(100) is preferred over enableCharging: it also persists the 100% limit
         // to settings.json, so the daemon won't re-apply the old limit if restarted later.
         MainActor.assumeIsolated {
+            UserDefaults.standard.set(viewModel.limit, forKey: "com.batterycare.savedLimit")
+            UserDefaults.standard.set(viewModel.sailingLower, forKey: "com.batterycare.savedSailingLower")
             DaemonClient.shared.sendNow(.setLimit(percentage: 100))
         }
     }
