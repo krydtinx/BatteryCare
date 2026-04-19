@@ -71,12 +71,11 @@ public final class BatteryViewModel: ObservableObject {
             .store(in: &cancellables)
 
         client.connectedPublisher
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] connected in
-                MainActor.assumeIsolated {
-                    self?.isConnected = connected
-                    if connected {
-                        self?.restoreLimitsIfNeeded()
-                    }
+                self?.isConnected = connected
+                if connected {
+                    self?.restoreLimitsIfNeeded()
                 }
             }
             .store(in: &cancellables)
@@ -101,14 +100,14 @@ public final class BatteryViewModel: ObservableObject {
 
     private func restoreLimitsIfNeeded() {
         let defaults = UserDefaults.standard
-        guard let savedLimit = defaults.object(forKey: "com.batterycare.savedLimit") as? Int,
-              let savedSailingLower = defaults.object(forKey: "com.batterycare.savedSailingLower") as? Int
-        else { return }
+        let savedLimit = defaults.object(forKey: "com.batterycare.savedLimit") as? Int
+        let savedSailingLower = defaults.object(forKey: "com.batterycare.savedSailingLower") as? Int
+        guard savedLimit != nil || savedSailingLower != nil else { return }
         defaults.removeObject(forKey: "com.batterycare.savedLimit")
         defaults.removeObject(forKey: "com.batterycare.savedSailingLower")
         Task {
-            await client.send(.setLimit(percentage: savedLimit))
-            await client.send(.setSailingLower(percentage: savedSailingLower))
+            if let limit = savedLimit { await client.send(.setLimit(percentage: limit)) }
+            if let lower = savedSailingLower { await client.send(.setSailingLower(percentage: lower)) }
         }
     }
 

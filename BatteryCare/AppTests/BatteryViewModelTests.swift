@@ -7,6 +7,12 @@ final class BatteryViewModelTests: XCTestCase {
 
     private var cancellables = Set<AnyCancellable>()
 
+    override func tearDown() {
+        UserDefaults.standard.removeObject(forKey: "com.batterycare.savedLimit")
+        UserDefaults.standard.removeObject(forKey: "com.batterycare.savedSailingLower")
+        super.tearDown()
+    }
+
     // MARK: - Mock
 
     @MainActor
@@ -105,8 +111,25 @@ final class BatteryViewModelTests: XCTestCase {
 
         let mock = MockDaemonClient()
         let vm = BatteryViewModel(client: mock)
+
+        // Expect both restore commands to arrive. receive(on: DispatchQueue.main) schedules
+        // the sink asynchronously, and the sink spawns an inner Task — use an expectation
+        // so we wait until both commands actually land rather than guessing yield counts.
+        let expectation = XCTestExpectation(description: "restore commands sent")
+        expectation.expectedFulfillmentCount = 1
+        var checkTimer: Timer?
+        checkTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { _ in
+            let hasLimit = mock.sentCommands.contains { if case .setLimit(let p) = $0 { return p == 75 }; return false }
+            let hasSailing = mock.sentCommands.contains { if case .setSailingLower(let p) = $0 { return p == 60 }; return false }
+            if hasLimit && hasSailing {
+                checkTimer?.invalidate()
+                expectation.fulfill()
+            }
+        }
+
         mock.setConnected(true)
-        await Task.yield()
+        await fulfillment(of: [expectation], timeout: 2.0)
+        checkTimer?.invalidate()
 
         let hasSetLimit = mock.sentCommands.contains {
             if case .setLimit(let p) = $0 { return p == 75 }
