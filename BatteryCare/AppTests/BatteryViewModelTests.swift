@@ -28,12 +28,12 @@ final class BatteryViewModelTests: XCTestCase {
 
     private func makeUpdate(
         percentage: Int = 50, isCharging: Bool = true, isPluggedIn: Bool = true,
-        chargingState: ChargingState = .charging, limit: Int = 80, pollingInterval: Int = 5,
-        error: DaemonError? = nil, errorDetail: String? = nil
+        chargingState: ChargingState = .charging, limit: Int = 80, sailingLower: Int = 80,
+        pollingInterval: Int = 5, error: DaemonError? = nil, errorDetail: String? = nil
     ) -> StatusUpdate {
         StatusUpdate(
             currentPercentage: percentage, isCharging: isCharging, isPluggedIn: isPluggedIn,
-            chargingState: chargingState, mode: .normal, limit: limit,
+            chargingState: chargingState, mode: .normal, limit: limit, sailingLower: sailingLower,
             pollingInterval: pollingInterval, error: error, errorDetail: errorDetail
         )
     }

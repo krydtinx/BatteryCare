@@ -46,7 +46,7 @@ final class CommandCodableTests: XCTestCase {
         let update = StatusUpdate(
             currentPercentage: 72, isCharging: true, isPluggedIn: true,
             chargingState: .charging, mode: .normal,
-            limit: 80, pollingInterval: 3
+            limit: 80, sailingLower: 80, pollingInterval: 3
         )
         let data = try encoder.encode(update)
         let decoded = try decoder.decode(StatusUpdate.self, from: data)
@@ -59,7 +59,7 @@ final class CommandCodableTests: XCTestCase {
     func testStatusUpdateWithErrorRoundtrip() throws {
         let update = StatusUpdate(
             currentPercentage: 80, isCharging: false, isPluggedIn: true,
-            chargingState: .limitReached, limit: 80, pollingInterval: 3,
+            chargingState: .limitReached, limit: 80, sailingLower: 80, pollingInterval: 3,
             error: .smcWriteFailed, errorDetail: "CH0B"
         )
         let data = try encoder.encode(update)
