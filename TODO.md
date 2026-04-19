@@ -36,10 +36,9 @@
   - `SleepAssertionManager` wraps `IOPMAssertionCreateWithName`/`IOPMAssertionRelease`
   - `DaemonCore` calls `acquire()`/`release()` in `applyState()` based on charging state
   - 5-second wake-retry to outlast powerd SMC re-initialization
-- [ ] **Restore limits on app reopen**
-  - AS-IS: Setting limit to 100% before closing app; reopening shows limit still at 100%
-  - TO-BE: Remember previous upper/lower limits; set both to 100% on app quit; restore original values on reopen
-  - Requires: Save pre-100% limits to settings.json; restore from settings on DaemonClient connection
+- [x] **Restore limits on app reopen**
+  - Saves limit + sailingLower to UserDefaults on quit (before setLimit(100))
+  - Restores both on first daemon reconnect; clears keys immediately to prevent re-restore on mid-session daemon restart
 - [ ] Discharge feature (drain to target % while plugged in — `AC-W` / `CH0I` SMC keys)
 - [x] Sailing mode (lower bound to prevent micro-charge/discharge cycling)
   - Hysteresis state machine: battery < lower → charge to upper; in zone → stay in current direction
