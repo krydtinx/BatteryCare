@@ -71,9 +71,13 @@ public final class BatteryViewModel: ObservableObject {
             .store(in: &cancellables)
 
         client.connectedPublisher
-            .receive(on: DispatchQueue.main)
             .sink { [weak self] connected in
-                self?.isConnected = connected
+                MainActor.assumeIsolated {
+                    self?.isConnected = connected
+                    if connected {
+                        self?.restoreLimitsIfNeeded()
+                    }
+                }
             }
             .store(in: &cancellables)
     }
@@ -92,6 +96,19 @@ public final class BatteryViewModel: ObservableObject {
             logger.warning("Daemon error: \(error.rawValue) \(update.errorDetail ?? "")")
         } else {
             errorMessage = nil
+        }
+    }
+
+    private func restoreLimitsIfNeeded() {
+        let defaults = UserDefaults.standard
+        guard let savedLimit = defaults.object(forKey: "com.batterycare.savedLimit") as? Int,
+              let savedSailingLower = defaults.object(forKey: "com.batterycare.savedSailingLower") as? Int
+        else { return }
+        defaults.removeObject(forKey: "com.batterycare.savedLimit")
+        defaults.removeObject(forKey: "com.batterycare.savedSailingLower")
+        Task {
+            await client.send(.setLimit(percentage: savedLimit))
+            await client.send(.setSailingLower(percentage: savedSailingLower))
         }
     }
 

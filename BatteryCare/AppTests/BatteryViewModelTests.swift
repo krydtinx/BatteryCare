@@ -96,4 +96,64 @@ final class BatteryViewModelTests: XCTestCase {
         }
         XCTAssertTrue(hasSetLimit)
     }
+
+    // MARK: - 6. Restore limits: sends setLimit + setSailingLower on connect when UserDefaults has saved values
+
+    @MainActor func testRestoresLimitsOnConnectWhenSaved() async {
+        UserDefaults.standard.set(75, forKey: "com.batterycare.savedLimit")
+        UserDefaults.standard.set(60, forKey: "com.batterycare.savedSailingLower")
+
+        let mock = MockDaemonClient()
+        let vm = BatteryViewModel(client: mock)
+        mock.setConnected(true)
+        await Task.yield()
+
+        let hasSetLimit = mock.sentCommands.contains {
+            if case .setLimit(let p) = $0 { return p == 75 }
+            return false
+        }
+        let hasSetSailingLower = mock.sentCommands.contains {
+            if case .setSailingLower(let p) = $0 { return p == 60 }
+            return false
+        }
+        XCTAssertTrue(hasSetLimit, "Expected setLimit(75) to be sent")
+        XCTAssertTrue(hasSetSailingLower, "Expected setSailingLower(60) to be sent")
+
+        // Clean up
+        UserDefaults.standard.removeObject(forKey: "com.batterycare.savedLimit")
+        UserDefaults.standard.removeObject(forKey: "com.batterycare.savedSailingLower")
+    }
+
+    // MARK: - 7. Restore limits: does nothing on connect when UserDefaults is empty
+
+    @MainActor func testNoRestoreOnConnectWhenNothingSaved() async {
+        UserDefaults.standard.removeObject(forKey: "com.batterycare.savedLimit")
+        UserDefaults.standard.removeObject(forKey: "com.batterycare.savedSailingLower")
+
+        let mock = MockDaemonClient()
+        let vm = BatteryViewModel(client: mock)
+        let commandCountBefore = mock.sentCommands.count
+        mock.setConnected(true)
+        await Task.yield()
+
+        XCTAssertEqual(mock.sentCommands.count, commandCountBefore,
+                       "Expected no commands sent when UserDefaults is empty")
+    }
+
+    // MARK: - 8. Restore limits: clears UserDefaults after restoring so reconnects don't re-restore
+
+    @MainActor func testClearsUserDefaultsAfterRestoring() async {
+        UserDefaults.standard.set(70, forKey: "com.batterycare.savedLimit")
+        UserDefaults.standard.set(55, forKey: "com.batterycare.savedSailingLower")
+
+        let mock = MockDaemonClient()
+        let vm = BatteryViewModel(client: mock)
+        mock.setConnected(true)
+        await Task.yield()
+
+        XCTAssertNil(UserDefaults.standard.object(forKey: "com.batterycare.savedLimit"),
+                     "savedLimit should be cleared after restore")
+        XCTAssertNil(UserDefaults.standard.object(forKey: "com.batterycare.savedSailingLower"),
+                     "savedSailingLower should be cleared after restore")
+    }
 }
