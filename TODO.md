@@ -23,11 +23,13 @@
   - Design decision: This is correct behavior (UI in sync with daemon), not a bug
   - May improve UX by showing a visual indicator that lower is constrained by limit
 
-- [ ] **Sleep prevention not blocking over-charge when closing lid**
-  - Scenario: Battery at 57%, upper/lower bounds set to 60%, close lid
-  - Observed: Battery charges past 60% limit while in low-power sleep state
-  - Expected: Sleep watcher triggers on lid close; state machine holds at limit (60%)
-  - Root cause: Unknown — investigate sleep watcher timing with battery polling, wake event timing, CHTE persistence across sleep/wake
+- [x] **Sleep prevention not blocking over-charge when closing lid**
+  - **FIXED: Scheduled maintenance wakes during sleep**
+  - Root cause: When Mac sleeps, daemon suspends. SMC continues charging unchecked. No polling to stop at limit.
+  - Solution: `IOPMSchedulePowerEvent` schedules dark (maintenance) wakes every N minutes during sleep
+  - On each wake: daemon polls battery, re-evaluates state, corrects SMC if needed, returns to sleep
+  - Cycle repeats until limit reached or user wakes Mac naturally
+  - Implemented in Task 5 with comprehensive logging and error handling
 
 ## Features (from research plan)
 

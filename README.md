@@ -149,6 +149,26 @@ Sent as a response to any command and also pushed proactively after every poll t
 
 `IOAllowPowerChange` is called synchronously in the IOKit callback before returning, which is required — if the callback does not ack within ~30 seconds, macOS force-sleeps regardless.
 
+#### Scheduled Maintenance Wakes (Sleep Charging Fix)
+
+When the user closes the Mac lid while charging is below the limit, the daemon is suspended and the SMC continues charging unchecked. To prevent overshoot, the daemon schedules periodic dark (maintenance) wakes during sleep using `IOPMSchedulePowerEvent`:
+
+**Sleep cycle:**
+- **`willSleep`**: If plugged in, below limit, and not disabled:
+  1. Disable charging (best-effort)
+  2. Schedule a dark wake in N minutes (configurable via `sleepWakeInterval`, default 5)
+  3. Release sleep assertion
+  4. Return to sleep
+- **`hasPoweredOn`** (scheduled wake):
+  1. Cancel the scheduled wake
+  2. Poll battery and re-evaluate state
+  3. Re-enable charging if still below limit
+  4. Return to sleep (or stay awake if user initiated wake)
+
+The cycle repeats every N minutes until the battery reaches the limit. `sleepWakeInterval` can be set via the IPC protocol (`setSleepWakeInterval` command) and is persisted in `settings.json` (clamped 5–30 minutes).
+
+**Best-effort disabling:** The `disableCharging` call in `willSleep` races with the kernel's sleep sequence and may not execute before the system sleeps. The scheduled maintenance wake is the primary correctness mechanism; pre-sleep disable is a secondary precaution.
+
 ### Daemon Installation
 
 `install.sh` installs the daemon directly via `launchctl` rather than through `SMAppService`:

@@ -1,14 +1,15 @@
 public enum Command: Sendable {
     case getStatus
-    case setLimit(percentage: Int)          // clamped 20–100 by daemon
-    case setSailingLower(percentage: Int)   // clamped 20–limit by daemon
+    case setLimit(percentage: Int)              // clamped 20–100 by daemon
+    case setSailingLower(percentage: Int)       // clamped 20–limit by daemon
     case enableCharging
     case disableCharging
-    case setPollingInterval(seconds: Int)   // clamped 1–30 by daemon
+    case setPollingInterval(seconds: Int)       // clamped 1–30 by daemon
+    case setSleepWakeInterval(minutes: Int)     // clamped 5–30 by daemon
 }
 
 extension Command: Codable {
-    private enum CodingKeys: String, CodingKey { case type, percentage, seconds }
+    private enum CodingKeys: String, CodingKey { case type, percentage, seconds, minutes }
 
     public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
@@ -28,6 +29,9 @@ extension Command: Codable {
         case .setPollingInterval(let s):
             try c.encode("setPollingInterval", forKey: .type)
             try c.encode(s, forKey: .seconds)
+        case .setSleepWakeInterval(let m):
+            try c.encode("setSleepWakeInterval", forKey: .type)
+            try c.encode(m, forKey: .minutes)
         }
     }
 
@@ -37,13 +41,15 @@ extension Command: Codable {
         switch type {
         case "getStatus":           self = .getStatus
         case "enableCharging":      self = .enableCharging
-        case "disableCharging":    self = .disableCharging
+        case "disableCharging":     self = .disableCharging
         case "setLimit":
             self = .setLimit(percentage: try c.decode(Int.self, forKey: .percentage))
         case "setSailingLower":
             self = .setSailingLower(percentage: try c.decode(Int.self, forKey: .percentage))
         case "setPollingInterval":
             self = .setPollingInterval(seconds: try c.decode(Int.self, forKey: .seconds))
+        case "setSleepWakeInterval":
+            self = .setSleepWakeInterval(minutes: try c.decode(Int.self, forKey: .minutes))
         default:
             throw DecodingError.dataCorruptedError(forKey: .type, in: c,
                 debugDescription: "Unknown command type: \(type)")

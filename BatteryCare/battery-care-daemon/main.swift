@@ -1,5 +1,6 @@
 import Foundation
 import os.log
+import Dispatch
 
 signal(SIGPIPE, SIG_IGN)
 
@@ -13,13 +14,11 @@ try? FileManager.default.createDirectory(
     attributes: nil
 )
 
-// Set up file logger
-let fileLogger = FileLogger(path: "\(logDir)/daemon.log")
+// Create FileLogger before setting up SIGHUP handler
+let fileLogger = FileLogger(path: "/Library/Logs/BatteryCare/daemon.log")
 
-// Install SIGHUP handler for newsyslog log rotation.
-// DispatchSource is safe for Swift code — unlike raw signal()/sigaction() which
-// cannot call Swift runtime functions (allocations, locks, reference counting).
-signal(SIGHUP, SIG_IGN)   // suppress default handling before DispatchSource is ready
+// Set up SIGHUP handler for log rotation
+signal(SIGHUP, SIG_IGN)
 let sighupSource = DispatchSource.makeSignalSource(signal: SIGHUP, queue: .main)
 sighupSource.setEventHandler { fileLogger.reopen() }
 sighupSource.resume()
