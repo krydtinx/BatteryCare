@@ -30,6 +30,13 @@ final class CommandCodableTests: XCTestCase {
         XCTAssertEqual(s, 5)
     }
 
+    func testSetSleepWakeIntervalRoundtrip() throws {
+        guard case .setSleepWakeInterval(let m) = try roundtrip(.setSleepWakeInterval(minutes: 10)) else {
+            XCTFail("Expected .setSleepWakeInterval"); return
+        }
+        XCTAssertEqual(m, 10)
+    }
+
     func testEnableChargingRoundtrip() throws {
         guard case .enableCharging = try roundtrip(.enableCharging) else {
             XCTFail("Expected .enableCharging"); return

@@ -98,6 +98,11 @@ public actor DaemonCore {
             try? settings.save()
             return makeStatusUpdate()
 
+        case .setSleepWakeInterval(let m):
+            settings.sleepWakeInterval = max(5, min(30, m))
+            try? settings.save()
+            return makeStatusUpdate()
+
         case .enableCharging:
             settings.isChargingDisabled = false
             try? settings.save()
