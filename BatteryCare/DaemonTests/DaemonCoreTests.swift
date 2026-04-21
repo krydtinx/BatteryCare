@@ -41,6 +41,26 @@ final class MockSleepAssertion: SleepAssertionProtocol, @unchecked Sendable {
     }
 }
 
+final class MockWakeScheduler: WakeSchedulerProtocol, @unchecked Sendable {
+    var scheduledDates: [Date] = []
+    @discardableResult
+    func schedule(at date: Date) -> Bool {
+        scheduledDates.append(date)
+        return true
+    }
+    func cancel(at date: Date) {
+        scheduledDates.removeAll { $0 == date }
+    }
+}
+
+final class MockFileLogger: FileLoggerProtocol, @unchecked Sendable {
+    var messages: [String] = []
+    func info(_ message: String) {
+        messages.append(message)
+    }
+    func reopen() {}
+}
+
 // MARK: - Tests
 
 final class DaemonCoreTests: XCTestCase {
@@ -52,7 +72,9 @@ final class DaemonCoreTests: XCTestCase {
         isChargingDisabled: Bool = false,
         smc: MockSMCService = MockSMCService(),
         battery: MockBatteryMonitor = MockBatteryMonitor(),
-        sleepAssertion: MockSleepAssertion = MockSleepAssertion()
+        sleepAssertion: MockSleepAssertion = MockSleepAssertion(),
+        wakeScheduler: MockWakeScheduler = MockWakeScheduler(),
+        fileLogger: MockFileLogger = MockFileLogger()
     ) -> DaemonCore {
         let settings = DaemonSettings(
             limit: limit,
@@ -67,7 +89,9 @@ final class DaemonCoreTests: XCTestCase {
             battery: battery,
             sleepWatcher: MockSleepWatcher(),
             socketServer: MockSocketServer(),
-            sleepAssertion: sleepAssertion
+            sleepAssertion: sleepAssertion,
+            wakeScheduler: wakeScheduler,
+            fileLogger: fileLogger
         )
     }
 
@@ -228,5 +252,25 @@ final class DaemonCoreTests: XCTestCase {
         """.data(using: .utf8)!
         let settings = try JSONDecoder().decode(DaemonSettings.self, from: json)
         XCTAssertEqual(settings.sleepWakeInterval, 5)
+    }
+
+    // MARK: - setSleepWakeInterval clamping
+
+    func testSetSleepWakeIntervalClampMinimum() async {
+        let core = makeCore()
+        let update = await core.handle(.setSleepWakeInterval(minutes: 3))
+        XCTAssertEqual(update.sleepWakeInterval, 5)  // clamped from 3 → 5
+    }
+
+    func testSetSleepWakeIntervalClampMaximum() async {
+        let core = makeCore()
+        let update = await core.handle(.setSleepWakeInterval(minutes: 60))
+        XCTAssertEqual(update.sleepWakeInterval, 30)  // clamped from 60 → 30
+    }
+
+    func testSetSleepWakeIntervalValid() async {
+        let core = makeCore()
+        let update = await core.handle(.setSleepWakeInterval(minutes: 15))
+        XCTAssertEqual(update.sleepWakeInterval, 15)
     }
 }

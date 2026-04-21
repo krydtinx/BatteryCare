@@ -30,6 +30,8 @@ let socketServer = SocketServer(
     socketPath: "/var/run/battery-care/daemon.sock",
     allowedUID: settings.allowedUID
 )
+let wakeScheduler = WakeScheduler()
+let fileLogger = FileLogger(path: "/Library/Logs/BatteryCare/daemon.log")
 
 let core = DaemonCore(
     settings: settings,
@@ -37,7 +39,9 @@ let core = DaemonCore(
     battery: battery,
     sleepWatcher: sleepWatcher,
     socketServer: socketServer,
-    sleepAssertion: sleepAssertion
+    sleepAssertion: sleepAssertion,
+    wakeScheduler: wakeScheduler,
+    fileLogger: fileLogger
 )
 
 // Launch core on a detached task; crash on unrecoverable error

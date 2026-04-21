@@ -10,6 +10,7 @@ public actor DaemonCore {
 
     private var settings: DaemonSettings
     private var stateMachine = ChargingStateMachine()
+    private var scheduledWakeDate: Date? = nil
 
     // MARK: - Dependencies
 
@@ -18,6 +19,8 @@ public actor DaemonCore {
     private let sleepWatcher: SleepWatcherProtocol
     private let socketServer: SocketServerProtocol
     private let sleepAssertion: SleepAssertionProtocol
+    private let wakeScheduler: WakeSchedulerProtocol
+    private let fileLogger: FileLoggerProtocol
 
     // MARK: - Init
 
@@ -27,7 +30,9 @@ public actor DaemonCore {
         battery: BatteryMonitorProtocol,
         sleepWatcher: SleepWatcherProtocol,
         socketServer: SocketServerProtocol,
-        sleepAssertion: SleepAssertionProtocol
+        sleepAssertion: SleepAssertionProtocol,
+        wakeScheduler: WakeSchedulerProtocol,
+        fileLogger: FileLoggerProtocol
     ) {
         self.settings = settings
         self.smc = smc
@@ -35,6 +40,8 @@ public actor DaemonCore {
         self.sleepWatcher = sleepWatcher
         self.socketServer = socketServer
         self.sleepAssertion = sleepAssertion
+        self.wakeScheduler = wakeScheduler
+        self.fileLogger = fileLogger
     }
 
     // MARK: - Run
@@ -140,12 +147,20 @@ public actor DaemonCore {
         for await event in sleepWatcher.events() {
             switch event {
             case .willSleep:
-                // Re-apply SMC state immediately before sleep so powerd cannot override
-                // the charge limit. The sleep assertion is already in the correct state
-                // from the last poll tick; acquire/release here are no-ops.
-                applyState()
+                if shouldScheduleWake() {
+                    do {
+                        try smc.perform(.disableCharging)
+                        sleepAssertion.release()
+                        scheduleWake()
+                    } catch {
+                        logger.error("Failed to disable charging before sleep: \(String(describing: error), privacy: .public)")
+                        fileLogger.info("Failed to disable charging before sleep: \(error)")
+                    }
+                } else {
+                    applyState()
+                }
             case .hasPoweredOn:
-                applyState()
+                cancelScheduledWake()
                 pollOnce()
             }
         }
@@ -207,6 +222,35 @@ public actor DaemonCore {
         return nil
     }
 
+    // MARK: - Sleep/Wake Scheduling
+
+    private func shouldScheduleWake() -> Bool {
+        guard let reading = try? battery.read() else { return false }
+        return reading.isPluggedIn && reading.percentage < settings.limit && !settings.isChargingDisabled
+    }
+
+    private func scheduleWake() {
+        cancelScheduledWake()
+        let wakeDate = Date(timeIntervalSinceNow: TimeInterval(settings.sleepWakeInterval * 60))
+        if wakeScheduler.schedule(at: wakeDate) {
+            scheduledWakeDate = wakeDate
+            logger.info("Scheduled wake at \(wakeDate.ISO8601Format())")
+            fileLogger.info("Scheduled wake at \(wakeDate.ISO8601Format())")
+        } else {
+            logger.error("Failed to schedule wake")
+            fileLogger.info("Failed to schedule wake")
+        }
+    }
+
+    private func cancelScheduledWake() {
+        if let date = scheduledWakeDate {
+            wakeScheduler.cancel(at: date)
+            logger.info("Cancelled scheduled wake at \(date.ISO8601Format())")
+            fileLogger.info("Cancelled scheduled wake at \(date.ISO8601Format())")
+            scheduledWakeDate = nil
+        }
+    }
+
     private func makeStatusUpdate(
         from reading: BatteryReading? = nil,
         error: DaemonError? = nil,
@@ -222,6 +266,7 @@ public actor DaemonCore {
             limit: settings.limit,
             sailingLower: settings.sailingLower,
             pollingInterval: settings.pollingInterval,
+            sleepWakeInterval: settings.sleepWakeInterval,
             error: error,
             errorDetail: errorDetail
         )
@@ -234,7 +279,8 @@ private extension StatusUpdate {
     static var empty: StatusUpdate {
         StatusUpdate(
             currentPercentage: 0, isCharging: false, isPluggedIn: false,
-            chargingState: .idle, mode: .normal, limit: 80, sailingLower: 80, pollingInterval: 5
+            chargingState: .idle, mode: .normal, limit: 80, sailingLower: 80, pollingInterval: 5,
+            sleepWakeInterval: 5
         )
     }
 }
