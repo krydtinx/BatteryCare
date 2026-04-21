@@ -149,19 +149,32 @@ public actor DaemonCore {
             case .willSleep:
                 if shouldScheduleWake() {
                     do {
+                        let reading = try battery.read()
                         try smc.perform(.disableCharging)
                         sleepAssertion.release()
                         scheduleWake()
+                        let msg = "[sleep] willSleep: battery=\(reading.percentage)% limit=\(settings.limit)% → disableCharging, wake scheduled in \(settings.sleepWakeInterval) min"
+                        logger.info("\(msg, privacy: .public)")
+                        fileLogger.info(msg)
                     } catch {
                         logger.error("Failed to disable charging before sleep: \(String(describing: error), privacy: .public)")
                         fileLogger.info("Failed to disable charging before sleep: \(error)")
                     }
                 } else {
+                    let reading = (try? battery.read()) ?? BatteryReading(percentage: 0, isCharging: false, isPluggedIn: false)
                     applyState()
+                    let msg = "[sleep] willSleep: battery=\(reading.percentage)% limit=\(settings.limit)% → applyState (no wake scheduled)"
+                    logger.info("\(msg, privacy: .public)")
+                    fileLogger.info(msg)
                 }
             case .hasPoweredOn:
+                let reading = (try? battery.read()) ?? BatteryReading(percentage: 0, isCharging: false, isPluggedIn: false)
                 cancelScheduledWake()
+                let stateBefore = stateMachine.state
                 pollOnce()
+                let msg = "[sleep] hasPoweredOn: battery=\(reading.percentage)% limit=\(settings.limit)% state=\(stateBefore) → applyState"
+                logger.info("\(msg, privacy: .public)")
+                fileLogger.info(msg)
             }
         }
     }
@@ -178,6 +191,9 @@ public actor DaemonCore {
                 isDisabled: settings.isChargingDisabled
             )
             applyState()
+            let msg = "[poll] battery=\(reading.percentage)% plugged=\(reading.isPluggedIn) charging=\(reading.isCharging) state=\(stateMachine.state) limit=\(settings.limit)%"
+            logger.info("\(msg, privacy: .public)")
+            fileLogger.info(msg)
             socketServer.broadcast(makeStatusUpdate(from: reading))
         } catch {
             let update = makeStatusUpdate(error: .batteryReadFailed, errorDetail: "\(error)")
@@ -234,19 +250,22 @@ public actor DaemonCore {
         let wakeDate = Date(timeIntervalSinceNow: TimeInterval(settings.sleepWakeInterval * 60))
         if wakeScheduler.schedule(at: wakeDate) {
             scheduledWakeDate = wakeDate
-            logger.info("Scheduled wake at \(wakeDate.ISO8601Format())")
-            fileLogger.info("Scheduled wake at \(wakeDate.ISO8601Format())")
+            let msg = "[sleep] scheduleWake: scheduled at \(wakeDate.ISO8601Format()) OK"
+            logger.info("\(msg, privacy: .public)")
+            fileLogger.info(msg)
         } else {
-            logger.error("Failed to schedule wake")
-            fileLogger.info("Failed to schedule wake")
+            let msg = "[sleep] scheduleWake: FAILED: IOPMSchedulePowerEvent returned error"
+            logger.error("\(msg, privacy: .public)")
+            fileLogger.info(msg)
         }
     }
 
     private func cancelScheduledWake() {
         if let date = scheduledWakeDate {
             wakeScheduler.cancel(at: date)
-            logger.info("Cancelled scheduled wake at \(date.ISO8601Format())")
-            fileLogger.info("Cancelled scheduled wake at \(date.ISO8601Format())")
+            let msg = "[sleep] cancelScheduledWake: cancelled \(date.ISO8601Format())"
+            logger.info("\(msg, privacy: .public)")
+            fileLogger.info(msg)
             scheduledWakeDate = nil
         }
     }
