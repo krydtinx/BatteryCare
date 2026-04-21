@@ -170,9 +170,8 @@ public actor DaemonCore {
             case .hasPoweredOn:
                 let reading = (try? battery.read()) ?? BatteryReading(percentage: 0, isCharging: false, isPluggedIn: false)
                 cancelScheduledWake()
-                let stateBefore = stateMachine.state
                 pollOnce()
-                let msg = "[sleep] hasPoweredOn: battery=\(reading.percentage)% limit=\(settings.limit)% state=\(stateBefore) → applyState"
+                let msg = "[sleep] hasPoweredOn: battery=\(reading.percentage)% limit=\(settings.limit)%"
                 logger.info("\(msg, privacy: .public)")
                 fileLogger.info(msg)
             }
@@ -254,7 +253,7 @@ public actor DaemonCore {
             logger.info("\(msg, privacy: .public)")
             fileLogger.info(msg)
         } else {
-            let msg = "[sleep] scheduleWake: FAILED: IOPMSchedulePowerEvent returned error"
+            let msg = "[sleep] scheduleWake: FAILED (IOPMSchedulePowerEvent returned error)"
             logger.error("\(msg, privacy: .public)")
             fileLogger.info(msg)
         }
