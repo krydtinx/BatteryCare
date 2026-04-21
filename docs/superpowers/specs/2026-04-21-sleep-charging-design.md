@@ -15,7 +15,7 @@ Small overshoot (a few percent) is acceptable. Large overshoot (10–30%) is not
 
 Use `IOPMSchedulePowerEvent` to schedule periodic dark (maintenance) wakes while the system is asleep. On each wake the daemon polls the battery, re-evaluates state, corrects the SMC if needed, and lets the system return to sleep. The cycle repeats until the limit is reached or the user wakes the Mac naturally.
 
-Charging is disabled before each sleep as a safety net. It is re-enabled on wake if the battery is still below the limit.
+Charging is disabled before each sleep as a best-effort safety net (see `IOAllowPowerChange` race note below). It is re-enabled on wake if the battery is still below the limit. The scheduled wake is the primary correction mechanism.
 
 ## Architecture
 
@@ -36,6 +36,10 @@ hasPoweredOn
   // applyState() inside pollOnce() re-enables charging if still below limit
   // system returns to sleep naturally → willSleep fires → cycle repeats
 ```
+
+### `IOAllowPowerChange` race
+
+In `SleepWatcher`, the C callback calls `IOAllowPowerChange` synchronously for `kIOMessageSystemWillSleep` *before* the Swift actor processes the yielded `.willSleep` event. This means the kernel can proceed to sleep before `DaemonCore` runs `smc.perform(.disableCharging)`. The `disableCharging` call in `willSleep` is therefore **best-effort only** — it may not execute before the system sleeps. The scheduled maintenance wake is the real correctness mechanism; disabling charging pre-sleep is a secondary precaution for the cases where timing allows it.
 
 ### Termination condition
 
@@ -61,6 +65,8 @@ Add case:
 case setSleepWakeInterval(minutes: Int)
 ```
 
+Requires adding `minutes` to `CodingKeys` and extending both `encode(to:)` and `init(from:)`. Do not reuse the existing `seconds` key — keeping them semantically separate avoids confusion.
+
 ### `DaemonCore`
 
 New stored state:
@@ -79,13 +85,13 @@ Reads current battery. Returns `true` when all of:
 **`scheduleWake()`**
 - Calls `cancelScheduledWake()` first (defensive — avoids duplicate entries)
 - Computes `date = Date() + sleepWakeInterval * 60`
-- Calls `IOPMSchedulePowerEvent(date, "com.batterycare.daemon", kIOPMAutoWake)`
+- Calls `IOPMSchedulePowerEvent(date, "com.batterycare.daemon", kIOPMMaintenanceScheduled)` — produces a dark wake (display stays off); `kIOPMAutoWake` must NOT be used as it triggers a full user wake on Apple Silicon
 - Stores `scheduledWakeDate = date`
 - Logs result at info level
 
 **`cancelScheduledWake()`**
 - Returns immediately if `scheduledWakeDate == nil`
-- Calls `IOPMCancelScheduledPowerEvent(date, "com.batterycare.daemon", kIOPMAutoWake)`
+- Calls `IOPMCancelScheduledPowerEvent(date, "com.batterycare.daemon", kIOPMMaintenanceScheduled)`
 - Clears `scheduledWakeDate = nil`
 - Logs result at info level
 
@@ -112,16 +118,17 @@ case .hasPoweredOn:
 
 ### Log file
 
-Written to: `/Library/Application Support/BatteryCare/daemon.log`
+Written to: `/Library/Logs/BatteryCare/daemon.log` (macOS conventional location; Console.app indexes `/Library/Logs/` automatically).
 
-A `FileLogger` helper (single new file) wraps a file descriptor, exposes an `info(_ message: String)` method, and reopens the file on `SIGHUP`.
+A `FileLogger` helper (single new file) wraps a file descriptor, exposes an `info(_ message: String)` method, and reopens the file handle after `newsyslog` rotation via `SIGHUP`.
 
 ### `newsyslog` rotation config
 
 Installed to `/etc/newsyslog.d/com.batterycare.daemon.conf`:
 ```
-/Library/Application Support/BatteryCare/daemon.log  644  5  256  *  JN  com.batterycare.daemon
+"/Library/Logs/BatteryCare/daemon.log"  644  5  256  *  JN  com.batterycare.daemon
 ```
+Path is quoted to handle any future space issues and for clarity.
 - 5 bzip2-compressed archives
 - Rotate at 256 KB
 - Size-based only (no time trigger)
@@ -131,7 +138,7 @@ Config file added to `Resources/` alongside the LaunchDaemon plist.
 
 ### `main.swift`
 
-Install a `SIGHUP` signal handler that calls `fileLogger.reopen()` so the daemon writes to the fresh file after `newsyslog` rotates.
+Use `DispatchSource.makeSignalSource(signal: SIGHUP, queue: .main)` (not raw `signal()` / `sigaction()`) to call `fileLogger.reopen()` after `newsyslog` rotates. Raw signal handlers cannot safely call Swift runtime code (allocations, reference counting, locks); `DispatchSource` dispatches outside the signal context, making it safe.
 
 ## Log Lines
 
@@ -164,8 +171,8 @@ All written to both `os.log` (info level) and the log file.
 |------|--------|
 | `BatteryCare/battery-care-daemon/Settings/DaemonSettings.swift` | Add `sleepWakeInterval` field + decoder fallback |
 | `BatteryCare/battery-care-daemon/Core/DaemonCore.swift` | Update `sleepLoop()`, add `scheduleWake()`, `cancelScheduledWake()`, `shouldScheduleWake()`, handle new command |
-| `BatteryCare/battery-care-daemon/Logging/FileLogger.swift` | New file: log file helper with `reopen()` |
-| `BatteryCare/battery-care-daemon/main.swift` | Install `SIGHUP` handler, wire `FileLogger` |
+| `BatteryCare/battery-care-daemon/Logging/FileLogger.swift` | New file: log file helper writing to `/Library/Logs/BatteryCare/daemon.log`, with `reopen()` for post-rotation |
+| `BatteryCare/battery-care-daemon/main.swift` | Wire `FileLogger`; install `SIGHUP` handler via `DispatchSource.makeSignalSource` |
 | `Shared/Sources/BatteryCareShared/Command.swift` | Add `setSleepWakeInterval(minutes:)` case |
 | `Resources/newsyslog/com.batterycare.daemon.conf` | New file: newsyslog rotation config |
 
