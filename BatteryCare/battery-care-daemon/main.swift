@@ -1,5 +1,6 @@
 import Foundation
 import os.log
+import Dispatch
 
 signal(SIGPIPE, SIG_IGN)
 
@@ -12,6 +13,15 @@ try? FileManager.default.createDirectory(
     withIntermediateDirectories: true,
     attributes: nil
 )
+
+// Create FileLogger before setting up SIGHUP handler
+let fileLogger = FileLogger(path: "/Library/Logs/BatteryCare/daemon.log")
+
+// Set up SIGHUP handler for log rotation
+signal(SIGHUP, SIG_IGN)
+let sighupSource = DispatchSource.makeSignalSource(signal: SIGHUP, queue: .main)
+sighupSource.setEventHandler { fileLogger.reopen() }
+sighupSource.resume()
 
 // Load settings
 let settings = DaemonSettings.load()
@@ -31,7 +41,6 @@ let socketServer = SocketServer(
     allowedUID: settings.allowedUID
 )
 let wakeScheduler = WakeScheduler()
-let fileLogger = FileLogger(path: "/Library/Logs/BatteryCare/daemon.log")
 
 let core = DaemonCore(
     settings: settings,

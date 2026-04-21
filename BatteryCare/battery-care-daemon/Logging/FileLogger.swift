@@ -35,10 +35,10 @@ public final class FileLogger: FileLoggerProtocol, @unchecked Sendable {
 
     /// Appends an info-level line: `2026-04-21T02:15:00.000Z INFO <message>\n`
     public func info(_ message: String) {
-        let timestamp = formatter.string(from: Date())
-        let line = "\(timestamp) INFO \(message)\n"
         lock.lock()
         defer { lock.unlock() }
+        let timestamp = formatter.string(from: Date())
+        let line = "\(timestamp) INFO \(message)\n"
         fileHandle?.write(Data(line.utf8))
     }
 

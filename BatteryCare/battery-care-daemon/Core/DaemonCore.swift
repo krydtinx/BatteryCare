@@ -148,18 +148,13 @@ public actor DaemonCore {
             switch event {
             case .willSleep:
                 if shouldScheduleWake() {
-                    do {
-                        let reading = try battery.read()
-                        try smc.perform(.disableCharging)
-                        sleepAssertion.release()
-                        scheduleWake()
-                        let msg = "[sleep] willSleep: battery=\(reading.percentage)% limit=\(settings.limit)% → disableCharging, wake scheduled in \(settings.sleepWakeInterval) min"
-                        logger.info("\(msg, privacy: .public)")
-                        fileLogger.info(msg)
-                    } catch {
-                        logger.error("Failed to disable charging before sleep: \(String(describing: error), privacy: .public)")
-                        fileLogger.info("Failed to disable charging before sleep: \(error)")
-                    }
+                    let reading = (try? battery.read()) ?? BatteryReading(percentage: 0, isCharging: false, isPluggedIn: false)
+                    try? smc.perform(.disableCharging)
+                    sleepAssertion.release()
+                    scheduleWake()
+                    let msg = "[sleep] willSleep: battery=\(reading.percentage)% limit=\(settings.limit)% → disableCharging, wake scheduled in \(settings.sleepWakeInterval) min"
+                    logger.info("\(msg, privacy: .public)")
+                    fileLogger.info(msg)
                 } else {
                     let reading = (try? battery.read()) ?? BatteryReading(percentage: 0, isCharging: false, isPluggedIn: false)
                     applyState()
