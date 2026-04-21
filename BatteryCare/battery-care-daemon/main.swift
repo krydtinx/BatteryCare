@@ -13,6 +13,17 @@ try? FileManager.default.createDirectory(
     attributes: nil
 )
 
+// Set up file logger
+let fileLogger = FileLogger(path: "\(logDir)/daemon.log")
+
+// Install SIGHUP handler for newsyslog log rotation.
+// DispatchSource is safe for Swift code — unlike raw signal()/sigaction() which
+// cannot call Swift runtime functions (allocations, locks, reference counting).
+signal(SIGHUP, SIG_IGN)   // suppress default handling before DispatchSource is ready
+let sighupSource = DispatchSource.makeSignalSource(signal: SIGHUP, queue: .main)
+sighupSource.setEventHandler { fileLogger.reopen() }
+sighupSource.resume()
+
 // Load settings
 let settings = DaemonSettings.load()
 
@@ -30,6 +41,7 @@ let socketServer = SocketServer(
     socketPath: "/var/run/battery-care/daemon.sock",
     allowedUID: settings.allowedUID
 )
+let wakeScheduler = WakeScheduler()
 
 let core = DaemonCore(
     settings: settings,
@@ -37,7 +49,9 @@ let core = DaemonCore(
     battery: battery,
     sleepWatcher: sleepWatcher,
     socketServer: socketServer,
-    sleepAssertion: sleepAssertion
+    sleepAssertion: sleepAssertion,
+    wakeScheduler: wakeScheduler,
+    fileLogger: fileLogger
 )
 
 // Launch core on a detached task; crash on unrecoverable error
