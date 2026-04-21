@@ -3,7 +3,7 @@ import IOKit.pwr_mgt
 
 // MARK: - Protocol
 
-protocol WakeSchedulerProtocol: Sendable {
+public protocol WakeSchedulerProtocol: Sendable {
     /// Schedule a maintenance (dark) wake at the given date.
     /// Returns true on success.
     @discardableResult
@@ -14,7 +14,7 @@ protocol WakeSchedulerProtocol: Sendable {
 
 // MARK: - Implementation
 
-final class WakeScheduler: WakeSchedulerProtocol, @unchecked Sendable {
+public final class WakeScheduler: WakeSchedulerProtocol, @unchecked Sendable {
 
     // Attempting to use "MaintenanceScheduled" as a raw string for dark wakes.
     // Do NOT use kIOPMAutoWake — it causes a full user wake on Apple Silicon.
@@ -23,13 +23,15 @@ final class WakeScheduler: WakeSchedulerProtocol, @unchecked Sendable {
     private let scheduleType = "MaintenanceScheduled" as CFString
     private let clientID = "com.batterycare.daemon" as CFString
 
+    public init() {}
+
     @discardableResult
-    func schedule(at date: Date) -> Bool {
+    public func schedule(at date: Date) -> Bool {
         let result = IOPMSchedulePowerEvent(date as CFDate, clientID, scheduleType)
         return result == kIOReturnSuccess
     }
 
-    func cancel(at date: Date) {
+    public func cancel(at date: Date) {
         IOPMCancelScheduledPowerEvent(date as CFDate, clientID, scheduleType)
     }
 }
