@@ -212,4 +212,21 @@ final class DaemonCoreTests: XCTestCase {
         let update = await core.handle(.getStatus)
         XCTAssertEqual(update.sailingLower, 65)
     }
+
+    // MARK: - sleepWakeInterval decoder fallback
+
+    func testSleepWakeIntervalDecoderFallback() throws {
+        // settings.json written before sleepWakeInterval existed must load with default 5
+        let json = """
+        {
+            "limit": 80,
+            "sailingLower": 80,
+            "pollingInterval": 5,
+            "isChargingDisabled": false,
+            "allowedUID": 501
+        }
+        """.data(using: .utf8)!
+        let settings = try JSONDecoder().decode(DaemonSettings.self, from: json)
+        XCTAssertEqual(settings.sleepWakeInterval, 5)
+    }
 }
