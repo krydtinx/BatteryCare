@@ -57,7 +57,8 @@ struct RangeSliderView: View {
     var onEditingChanged: ((Bool) -> Void)?
     var config: RangeSliderConfig
 
-    @State private var isEditing = false
+    @State private var isUpperEditing = false
+    @State private var dragStartUpper: Int = 0
 
     init(
         lower: Binding<Int>,
@@ -127,24 +128,25 @@ struct RangeSliderView: View {
         RoundedRectangle(cornerRadius: config.handleCornerRadius)
             .fill(config.upperHandleColor)
             .frame(width: config.handleWidth, height: config.handleHeight)
-            // Centered on upperX, sits above track (y offset = 0 in ZStack)
-            .offset(x: upperX - config.handleWidth / 2, y: 0)
             .contentShape(Rectangle())
+            .position(x: upperX, y: config.handleHeight / 2)
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
-                        // value.location.x is in the handle's local frame.
-                        // Add handle's left-edge offset to get track-space x.
-                        let handleOriginX = upperX - config.handleWidth / 2
-                        let trackX = handleOriginX + value.location.x
+                        if !isUpperEditing {
+                            dragStartUpper = upper
+                            isUpperEditing = true
+                            onEditingChanged?(true)
+                        }
+                        let startX = rangeSliderX(for: dragStartUpper, trackWidth: trackWidth, range: range)
+                        let trackX = startX + value.translation.width
                         let newValue = rangeSliderValue(for: trackX, trackWidth: trackWidth, range: range)
                         let clamped = max(range.lowerBound, min(range.upperBound, newValue))
-                        if !isEditing { isEditing = true; onEditingChanged?(true) }
                         if clamped != upper { upper = clamped }
                         if lower > upper { lower = upper }
                     }
                     .onEnded { _ in
-                        isEditing = false
+                        isUpperEditing = false
                         onEditingChanged?(false)
                     }
             )
