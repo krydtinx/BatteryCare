@@ -30,11 +30,6 @@ struct MenuBarView: View {
 
             Divider().padding(.horizontal, 12)
 
-            if vm.batteryDetail != nil {
-                batteryDetailSection
-                Divider().padding(.horizontal, 12)
-            }
-
             // Charge limit slider
             VStack(spacing: 4) {
                 HStack {
@@ -114,6 +109,11 @@ struct MenuBarView: View {
                 .padding(.vertical, 6)
             }
 
+            if vm.batteryDetail != nil {
+                Divider().padding(.horizontal, 12)
+                batteryDetailSection
+            }
+
             Divider().padding(.horizontal, 12)
 
             // Connection status dot + quit
@@ -150,6 +150,7 @@ struct MenuBarView: View {
                         .rotationEffect(.degrees(showBatteryDetail ? 90 : 0))
                         .animation(.easeInOut(duration: 0.2), value: showBatteryDetail)
                 }
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 12)
@@ -163,7 +164,7 @@ struct MenuBarView: View {
                     detailRow("Max capacity", "\(detail.maxCapacityMAh.formatted()) mAh")
                     detailRow("Design cap.",  "\(detail.designCapacityMAh.formatted()) mAh")
                     detailRow("Temperature",  String(format: "%.1f °C", detail.temperatureCelsius))
-                    detailRow("Voltage",      "\(detail.voltageMillivolts) mV")
+                    detailRow("Voltage",      String(format: "%.2f V", Double(detail.voltageMillivolts) / 1000))
                 }
                 .padding(.horizontal, 12)
                 .padding(.bottom, 6)
