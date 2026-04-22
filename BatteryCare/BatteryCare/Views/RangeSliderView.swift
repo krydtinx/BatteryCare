@@ -36,8 +36,12 @@ func rangeSliderValue(for x: CGFloat, trackWidth: CGFloat, range: ClosedRange<In
 }
 
 /// Convert an integer value to a track-space x offset.
+/// Clamps `value` to `range` before computing the offset, so out-of-range inputs
+/// are silently constrained rather than producing coordinates outside the slider bounds.
+/// Returns 0 for degenerate `range.count < 2`.
 func rangeSliderX(for value: Int, trackWidth: CGFloat, range: ClosedRange<Int>) -> CGFloat {
     guard range.count >= 2 else { return 0 }
-    let fraction = Double(value - range.lowerBound) / Double(range.count - 1)
+    let clamped = max(range.lowerBound, min(range.upperBound, value))
+    let fraction = Double(clamped - range.lowerBound) / Double(range.count - 1)
     return trackWidth * CGFloat(fraction)
 }

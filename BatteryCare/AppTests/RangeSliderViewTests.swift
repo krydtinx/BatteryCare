@@ -53,6 +53,14 @@ final class RangeSliderViewTests: XCTestCase {
         XCTAssertEqual(rangeSliderX(for: 60, trackWidth: 200, range: 20...100), 100, accuracy: 0.001)
     }
 
+    func test_x_forValueBelowRange_clampsToZero() {
+        XCTAssertEqual(rangeSliderX(for: 10, trackWidth: 200, range: 20...100), 0, accuracy: 0.001)
+    }
+
+    func test_x_forValueAboveRange_clampsToTrackWidth() {
+        XCTAssertEqual(rangeSliderX(for: 110, trackWidth: 200, range: 20...100), 200, accuracy: 0.001)
+    }
+
     // MARK: Round-trip
 
     func test_roundTrip_valueToXToValue() {
