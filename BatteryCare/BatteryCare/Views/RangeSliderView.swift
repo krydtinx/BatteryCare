@@ -115,8 +115,50 @@ struct RangeSliderView: View {
                 .fill(config.fillColor)
                 .frame(width: fillWidth, height: config.trackHeight)
                 .offset(x: lowerX, y: config.handleHeight)
+
+            upperHandleView(trackWidth: trackWidth, upperX: upperX)
         }
         .frame(width: trackWidth, height: totalTrackHeight)
+    }
+
+    // MARK: Upper handle
+
+    private func upperHandleView(trackWidth: CGFloat, upperX: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: config.handleCornerRadius)
+            .fill(config.upperHandleColor)
+            .frame(width: config.handleWidth, height: config.handleHeight)
+            // Centered on upperX, sits above track (y offset = 0 in ZStack)
+            .offset(x: upperX - config.handleWidth / 2, y: 0)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        // value.location.x is in the handle's local frame.
+                        // Add handle's left-edge offset to get track-space x.
+                        let handleOriginX = upperX - config.handleWidth / 2
+                        let trackX = handleOriginX + value.location.x
+                        let newValue = rangeSliderValue(for: trackX, trackWidth: trackWidth, range: range)
+                        let clamped = max(range.lowerBound, min(range.upperBound, newValue))
+                        if !isEditing { isEditing = true; onEditingChanged?(true) }
+                        if clamped != upper { upper = clamped }
+                        if lower > upper { lower = upper }
+                    }
+                    .onEnded { _ in
+                        isEditing = false
+                        onEditingChanged?(false)
+                    }
+            )
+            .accessibilityLabel(upperLabel)
+            .accessibilityValue("\(upper)%")
+            .accessibilityAdjustableAction { direction in
+                switch direction {
+                case .increment: upper = min(range.upperBound, upper + 1)
+                case .decrement:
+                    upper = max(range.lowerBound, upper - 1)
+                    if lower > upper { lower = upper }
+                @unknown default: break
+                }
+            }
     }
 
     // MARK: Labels
