@@ -59,6 +59,8 @@ struct RangeSliderView: View {
 
     @State private var isUpperEditing = false
     @State private var dragStartUpper: Int = 0
+    @State private var isLowerEditing = false
+    @State private var dragStartLower: Int = 0
 
     init(
         lower: Binding<Int>,
@@ -118,6 +120,7 @@ struct RangeSliderView: View {
                 .offset(x: lowerX, y: config.handleHeight)
 
             upperHandleView(trackWidth: trackWidth, upperX: upperX)
+            lowerHandleView(trackWidth: trackWidth, lowerX: lowerX)
         }
         .frame(width: trackWidth, height: totalTrackHeight)
     }
@@ -158,6 +161,47 @@ struct RangeSliderView: View {
                 case .decrement:
                     upper = max(range.lowerBound, upper - 1)
                     if lower > upper { lower = upper }
+                @unknown default: break
+                }
+            }
+    }
+
+    // MARK: Lower handle
+
+    private func lowerHandleView(trackWidth: CGFloat, lowerX: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: config.handleCornerRadius)
+            .fill(config.lowerHandleColor)
+            .frame(width: config.handleWidth, height: config.handleHeight)
+            .contentShape(Rectangle())
+            // Center x = lowerX, center y = handleHeight + trackHeight + handleHeight/2
+            // (lower handle sits below track; its zone is y: handleHeight+trackHeight...totalTrackHeight)
+            .position(x: lowerX, y: config.handleHeight + config.trackHeight + config.handleHeight / 2)
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        if !isLowerEditing {
+                            dragStartLower = lower
+                            isLowerEditing = true
+                            onEditingChanged?(true)
+                        }
+                        let startX = rangeSliderX(for: dragStartLower, trackWidth: trackWidth, range: range)
+                        let trackX = startX + value.translation.width
+                        let newValue = rangeSliderValue(for: trackX, trackWidth: trackWidth, range: range)
+                        // lower clamped between range.lowerBound and current upper
+                        let clamped = max(range.lowerBound, min(upper, newValue))
+                        if clamped != lower { lower = clamped }
+                    }
+                    .onEnded { _ in
+                        isLowerEditing = false
+                        onEditingChanged?(false)
+                    }
+            )
+            .accessibilityLabel(lowerLabel)
+            .accessibilityValue("\(lower)%")
+            .accessibilityAdjustableAction { direction in
+                switch direction {
+                case .increment: lower = min(upper, lower + 1)
+                case .decrement: lower = max(range.lowerBound, lower - 1)
                 @unknown default: break
                 }
             }
