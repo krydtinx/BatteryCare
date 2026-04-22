@@ -79,4 +79,31 @@ final class CommandCodableTests: XCTestCase {
         let data = Data(#"{"type":"unknown"}"#.utf8)
         XCTAssertThrowsError(try decoder.decode(Command.self, from: data))
     }
+
+    // MARK: - BatteryDetail
+
+    func testBatteryDetailCodableRoundtrip() throws {
+        let detail = BatteryDetail(
+            rawPercentage: 85, cycleCount: 312, healthPercent: 91,
+            maxCapacityMAh: 4821, designCapacityMAh: 5279,
+            temperatureCelsius: 28.4, voltageMillivolts: 12455
+        )
+        let data = try encoder.encode(detail)
+        let decoded = try decoder.decode(BatteryDetail.self, from: data)
+        XCTAssertEqual(decoded, detail)
+    }
+
+    func testBatteryDetailEquatable() {
+        let a = BatteryDetail(rawPercentage: 85, cycleCount: 312, healthPercent: 91,
+                              maxCapacityMAh: 4821, designCapacityMAh: 5279,
+                              temperatureCelsius: 28.4, voltageMillivolts: 12455)
+        let b = BatteryDetail(rawPercentage: 85, cycleCount: 312, healthPercent: 91,
+                              maxCapacityMAh: 4821, designCapacityMAh: 5279,
+                              temperatureCelsius: 28.4, voltageMillivolts: 12455)
+        let c = BatteryDetail(rawPercentage: 90, cycleCount: 312, healthPercent: 91,
+                              maxCapacityMAh: 4821, designCapacityMAh: 5279,
+                              temperatureCelsius: 28.4, voltageMillivolts: 12455)
+        XCTAssertEqual(a, b)
+        XCTAssertNotEqual(a, c)
+    }
 }
