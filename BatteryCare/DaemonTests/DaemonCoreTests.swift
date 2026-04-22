@@ -290,4 +290,27 @@ final class DaemonCoreTests: XCTestCase {
         let reading = BatteryReading(percentage: 85, isCharging: true, isPluggedIn: true, detail: detail)
         XCTAssertEqual(reading.detail, detail)
     }
+
+    // MARK: - detail forwarded through makeStatusUpdate
+
+    func testGetStatusForwardsDetail() async {
+        let detail = BatteryDetail(
+            rawPercentage: 85, cycleCount: 312, healthPercent: 91,
+            maxCapacityMAh: 4821, designCapacityMAh: 5279,
+            temperatureCelsius: 28.4, voltageMillivolts: 4100
+        )
+        let battery = MockBatteryMonitor()
+        battery.reading = BatteryReading(percentage: 72, isCharging: true, isPluggedIn: true, detail: detail)
+        let core = makeCore(limit: 80, battery: battery)
+        let update = await core.handle(.getStatus)
+        XCTAssertEqual(update.detail, detail)
+    }
+
+    func testGetStatusDetailIsNilWhenReadingHasNoDetail() async {
+        let battery = MockBatteryMonitor()
+        battery.reading = BatteryReading(percentage: 72, isCharging: true, isPluggedIn: true)
+        let core = makeCore(limit: 80, battery: battery)
+        let update = await core.handle(.getStatus)
+        XCTAssertNil(update.detail)
+    }
 }

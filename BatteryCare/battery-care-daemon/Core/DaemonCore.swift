@@ -281,7 +281,8 @@ public actor DaemonCore {
             pollingInterval: settings.pollingInterval,
             sleepWakeInterval: settings.sleepWakeInterval,
             error: error,
-            errorDetail: errorDetail
+            errorDetail: errorDetail,
+            detail: r.detail
         )
     }
 }
@@ -293,7 +294,7 @@ private extension StatusUpdate {
         StatusUpdate(
             currentPercentage: 0, isCharging: false, isPluggedIn: false,
             chargingState: .idle, mode: .normal, limit: 80, sailingLower: 80, pollingInterval: 5,
-            sleepWakeInterval: 5
+            sleepWakeInterval: 5, detail: nil
         )
     }
 }
