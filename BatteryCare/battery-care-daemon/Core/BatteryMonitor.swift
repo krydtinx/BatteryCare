@@ -35,7 +35,7 @@ public enum BatteryMonitorError: Error {
 // MARK: - Implementation
 
 /// Reads battery state via IOPSCopyPowerSourcesInfo — the standard public API for all Mac types.
-public final class BatteryMonitor: BatteryMonitorProtocol, @unchecked Sendable {
+public final class BatteryMonitor: BatteryMonitorProtocol, Sendable {
 
     public init() {}
 
@@ -54,9 +54,7 @@ public final class BatteryMonitor: BatteryMonitorProtocol, @unchecked Sendable {
             throw BatteryMonitorError.readFailed("No power sources found")
         }
 
-        // swiftlint:disable force_cast
-        let source = list[0] as! CFTypeRef
-        // swiftlint:enable force_cast
+        let source: CFTypeRef = list[0] as AnyObject
 
         // IOPSGetPowerSourceDescription is NOT a Copy — must use takeUnretainedValue
         guard let rawDesc = IOPSGetPowerSourceDescription(info, source) else {
