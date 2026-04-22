@@ -4,8 +4,7 @@ import BatteryCareShared
 struct MenuBarView: View {
     @ObservedObject var vm: BatteryViewModel
     @State private var showOptimizedWarning: Bool = false
-    @State private var isEditingSailingLower: Bool = false
-    @State private var showBatteryDetail: Bool = false
+@State private var showBatteryDetail: Bool = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -30,38 +29,18 @@ struct MenuBarView: View {
 
             Divider().padding(.horizontal, 12)
 
-            // Charge limit slider
-            VStack(spacing: 4) {
-                HStack {
-                    Text("Charge limit").font(.caption).foregroundStyle(.secondary)
-                    Spacer()
-                    Text("\(vm.limit)%").font(.system(size: 18, weight: .semibold, design: .rounded)).monospacedDigit()
-                }
-                Slider(value: Binding(
-                    get: { Double(vm.limit) },
-                    set: { vm.setLimit(Int($0)) }
-                ), in: 20...100, step: 1)
-            }
+            RangeSliderView(
+                lower: Binding(
+                    get: { vm.sailingLower },
+                    set: { vm.setSailingLower($0) }
+                ),
+                upper: Binding(
+                    get: { vm.limit },
+                    set: { vm.setLimit($0) }
+                )
+            )
             .padding(.horizontal, 12)
-            .padding(.top, 8)
-
-            // Sailing lower slider
-            VStack(spacing: 4) {
-                HStack {
-                    Text("Sailing lower").font(.caption).foregroundStyle(.secondary)
-                    Spacer()
-                    Text("\(vm.sailingLower)%").font(.system(size: 18, weight: .semibold, design: .rounded)).monospacedDigit()
-                }
-                let maxRange = Double(max(21, vm.limit))  // Ensure range width >= 1 to avoid SwiftUI crash
-                Slider(value: Binding(
-                    get: { Double(min(vm.sailingLower, max(20, vm.limit))) },
-                    set: { vm.setSailingLower(min(Int($0), vm.limit)) }
-                ), in: 20...maxRange, step: 1, onEditingChanged: { isEditing in
-                    isEditingSailingLower = isEditing
-                })
-            }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 8)
+            .padding(.vertical, 8)
 
             // Poll interval picker
             VStack(spacing: 4) {
