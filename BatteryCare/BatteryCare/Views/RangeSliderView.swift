@@ -83,6 +83,8 @@ struct RangeSliderView: View {
         config.handleHeight * 2 + config.trackHeight
     }
 
+    private let labelRowHeight: CGFloat = 16
+
     var body: some View {
         GeometryReader { geo in
             let trackWidth = geo.size.width
@@ -91,7 +93,7 @@ struct RangeSliderView: View {
                 labelsRow
             }
         }
-        .frame(height: totalTrackHeight + 4 + 16) // track + spacing + labels
+        .frame(height: totalTrackHeight + 4 + labelRowHeight)
     }
 
     // MARK: Track layer
