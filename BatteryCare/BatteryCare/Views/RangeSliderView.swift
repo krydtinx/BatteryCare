@@ -45,3 +45,91 @@ func rangeSliderX(for value: Int, trackWidth: CGFloat, range: ClosedRange<Int>) 
     let fraction = Double(clamped - range.lowerBound) / Double(range.count - 1)
     return trackWidth * CGFloat(fraction)
 }
+
+// MARK: - View
+
+struct RangeSliderView: View {
+    @Binding var lower: Int
+    @Binding var upper: Int
+    var range: ClosedRange<Int>
+    var lowerLabel: String
+    var upperLabel: String
+    var onEditingChanged: ((Bool) -> Void)?
+    var config: RangeSliderConfig
+
+    @State private var isEditing = false
+
+    init(
+        lower: Binding<Int>,
+        upper: Binding<Int>,
+        range: ClosedRange<Int> = 20...100,
+        lowerLabel: String = "Lower",
+        upperLabel: String = "Limit",
+        onEditingChanged: ((Bool) -> Void)? = nil,
+        config: RangeSliderConfig = .default
+    ) {
+        assert(range.count >= 2, "RangeSliderView: range must have count >= 2")
+        _lower = lower
+        _upper = upper
+        self.range = range
+        self.lowerLabel = lowerLabel
+        self.upperLabel = upperLabel
+        self.onEditingChanged = onEditingChanged
+        self.config = config
+    }
+
+    // Total height: upper handle space + track + lower handle space
+    private var totalTrackHeight: CGFloat {
+        config.handleHeight * 2 + config.trackHeight
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let trackWidth = geo.size.width
+            VStack(spacing: 4) {
+                trackLayer(trackWidth: trackWidth)
+                labelsRow
+            }
+        }
+        .frame(height: totalTrackHeight + 4 + 16) // track + spacing + labels
+    }
+
+    // MARK: Track layer
+
+    private func trackLayer(trackWidth: CGFloat) -> some View {
+        let lowerX = rangeSliderX(for: lower, trackWidth: trackWidth, range: range)
+        let upperX = rangeSliderX(for: upper, trackWidth: trackWidth, range: range)
+        let fillWidth = max(0, upperX - lowerX)
+
+        return ZStack(alignment: .topLeading) {
+            // Background track — sits at y = handleHeight (below upper handle space)
+            RoundedRectangle(cornerRadius: config.trackHeight / 2)
+                .fill(config.trackColor)
+                .frame(width: trackWidth, height: config.trackHeight)
+                .offset(y: config.handleHeight)
+
+            // Fill between lower and upper
+            RoundedRectangle(cornerRadius: config.trackHeight / 2)
+                .fill(config.fillColor)
+                .frame(width: fillWidth, height: config.trackHeight)
+                .offset(x: lowerX, y: config.handleHeight)
+        }
+        .frame(width: trackWidth, height: totalTrackHeight)
+    }
+
+    // MARK: Labels
+
+    private var labelsRow: some View {
+        HStack {
+            Text("\(lowerLabel) \(lower)%")
+                .font(.system(size: 9, weight: .medium, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text("\(upperLabel) \(upper)%")
+                .font(.system(size: 9, weight: .medium, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+        }
+    }
+}
