@@ -17,6 +17,7 @@ public struct StatusUpdate: Sendable {
     public let sleepWakeInterval: Int
     public let error: DaemonError?
     public let errorDetail: String?
+    public let detail: BatteryDetail?
 
     public init(
         currentPercentage: Int,
@@ -29,7 +30,8 @@ public struct StatusUpdate: Sendable {
         pollingInterval: Int,
         sleepWakeInterval: Int = 5,
         error: DaemonError? = nil,
-        errorDetail: String? = nil
+        errorDetail: String? = nil,
+        detail: BatteryDetail? = nil
     ) {
         self.currentPercentage = currentPercentage
         self.isCharging = isCharging
@@ -42,12 +44,13 @@ public struct StatusUpdate: Sendable {
         self.sleepWakeInterval = sleepWakeInterval
         self.error = error
         self.errorDetail = errorDetail
+        self.detail = detail
     }
 }
 
 extension StatusUpdate: Codable {
     private enum CodingKeys: String, CodingKey {
-        case currentPercentage, isCharging, isPluggedIn, chargingState, mode, limit, sailingLower, pollingInterval, sleepWakeInterval, error, errorDetail
+        case currentPercentage, isCharging, isPluggedIn, chargingState, mode, limit, sailingLower, pollingInterval, sleepWakeInterval, error, errorDetail, detail
     }
 
     public init(from decoder: Decoder) throws {
@@ -63,6 +66,7 @@ extension StatusUpdate: Codable {
         sleepWakeInterval = try container.decodeIfPresent(Int.self, forKey: .sleepWakeInterval) ?? 5
         error = try container.decodeIfPresent(DaemonError.self, forKey: .error)
         errorDetail = try container.decodeIfPresent(String.self, forKey: .errorDetail)
+        detail = try container.decodeIfPresent(BatteryDetail.self, forKey: .detail)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -78,5 +82,6 @@ extension StatusUpdate: Codable {
         try container.encode(sleepWakeInterval, forKey: .sleepWakeInterval)
         try container.encodeIfPresent(error, forKey: .error)
         try container.encodeIfPresent(errorDetail, forKey: .errorDetail)
+        try container.encodeIfPresent(detail, forKey: .detail)
     }
 }

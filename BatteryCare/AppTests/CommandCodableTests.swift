@@ -108,4 +108,32 @@ final class CommandCodableTests: XCTestCase {
         XCTAssertNotNil(json["temperatureCelsius"])
         XCTAssertNotNil(json["voltageMillivolts"])
     }
+
+    // MARK: - StatusUpdate detail field
+
+    func testStatusUpdateWithDetailRoundtrip() throws {
+        let detail = BatteryDetail(
+            rawPercentage: 85, cycleCount: 312, healthPercent: 91,
+            maxCapacityMAh: 4821, designCapacityMAh: 5279,
+            temperatureCelsius: 28.4, voltageMillivolts: 4100
+        )
+        let update = StatusUpdate(
+            currentPercentage: 57, isCharging: true, isPluggedIn: true,
+            chargingState: .charging, mode: .normal,
+            limit: 80, sailingLower: 70, pollingInterval: 5,
+            detail: detail
+        )
+        let data = try encoder.encode(update)
+        let decoded = try decoder.decode(StatusUpdate.self, from: data)
+        XCTAssertEqual(decoded.detail, detail)
+    }
+
+    func testStatusUpdateDetailDecodesNilWhenKeyMissing() throws {
+        let json = Data("""
+        {"currentPercentage":57,"isCharging":true,"isPluggedIn":true,"chargingState":"charging",
+         "mode":"normal","limit":80,"sailingLower":70,"pollingInterval":5,"sleepWakeInterval":5}
+        """.utf8)
+        let decoded = try decoder.decode(StatusUpdate.self, from: json)
+        XCTAssertNil(decoded.detail)
+    }
 }
