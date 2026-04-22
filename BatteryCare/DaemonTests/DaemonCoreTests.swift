@@ -273,4 +273,21 @@ final class DaemonCoreTests: XCTestCase {
         let update = await core.handle(.setSleepWakeInterval(minutes: 15))
         XCTAssertEqual(update.sleepWakeInterval, 15)
     }
+
+    // MARK: - BatteryReading detail field
+
+    func testBatteryReadingDefaultDetailIsNil() {
+        let reading = BatteryReading(percentage: 50, isCharging: true, isPluggedIn: true)
+        XCTAssertNil(reading.detail)
+    }
+
+    func testBatteryReadingStoresDetail() {
+        let detail = BatteryDetail(
+            rawPercentage: 85, cycleCount: 312, healthPercent: 91,
+            maxCapacityMAh: 4821, designCapacityMAh: 5279,
+            temperatureCelsius: 28.4, voltageMillivolts: 4100
+        )
+        let reading = BatteryReading(percentage: 85, isCharging: true, isPluggedIn: true, detail: detail)
+        XCTAssertEqual(reading.detail, detail)
+    }
 }

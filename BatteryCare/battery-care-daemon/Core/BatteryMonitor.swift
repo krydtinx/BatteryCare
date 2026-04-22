@@ -1,6 +1,7 @@
 import Foundation
 import IOKit
 import IOKit.ps
+import BatteryCareShared
 
 // MARK: - Protocol
 
@@ -14,11 +15,13 @@ public struct BatteryReading: Sendable {
     public let percentage: Int
     public let isCharging: Bool
     public let isPluggedIn: Bool
+    public let detail: BatteryDetail?
 
-    public init(percentage: Int, isCharging: Bool, isPluggedIn: Bool) {
+    public init(percentage: Int, isCharging: Bool, isPluggedIn: Bool, detail: BatteryDetail? = nil) {
         self.percentage = percentage
         self.isCharging = isCharging
         self.isPluggedIn = isPluggedIn
+        self.detail = detail
     }
 }
 
@@ -69,24 +72,60 @@ public final class BatteryMonitor: BatteryMonitorProtocol, @unchecked Sendable {
         let isPluggedIn = sourceState != kIOPSBatteryPowerValue
 
         // IOPS IsCharging lags after SMC writes; read directly from IORegistry for accuracy
-        let isCharging  = isPluggedIn && ioregIsCharging()
+        let (isCharging, detail) = ioregRead()
 
         return BatteryReading(
             percentage: min(max(percentage, 0), 100),
-            isCharging: isCharging,
-            isPluggedIn: isPluggedIn
+            isCharging: isPluggedIn && isCharging,
+            isPluggedIn: isPluggedIn,
+            detail: detail
         )
     }
 
-    /// Reads IsCharging from AppleSmartBattery IORegistry — updates immediately after SMC writes.
-    private func ioregIsCharging() -> Bool {
+    /// Opens AppleSmartBattery once and reads IsCharging + all detail keys in one pass.
+    /// Returns (isCharging: Bool, detail: BatteryDetail?) — detail is nil if any key is missing
+    /// or if AppleRawMaxCapacity/DesignCapacity are zero (guards against divide-by-zero).
+    ///
+    /// Temperature: Apple Smart Battery Spec unit is 0.1 Kelvin.
+    /// Formula: (raw / 10.0) - 273.15 = °C
+    ///
+    /// Capacity: On Apple Silicon, CurrentCapacity is a percentage (not mAh).
+    /// AppleRawCurrentCapacity / AppleRawMaxCapacity are the true mAh values.
+    private func ioregRead() -> (isCharging: Bool, detail: BatteryDetail?) {
         let service = IOServiceGetMatchingService(kIOMainPortDefault,
                           IOServiceMatching("AppleSmartBattery"))
-        guard service != IO_OBJECT_NULL else { return false }
+        guard service != IO_OBJECT_NULL else { return (false, nil) }
         defer { IOObjectRelease(service) }
 
-        let value = IORegistryEntryCreateCFProperty(service,
-                        "IsCharging" as CFString, kCFAllocatorDefault, 0)
-        return (value?.takeRetainedValue() as? NSNumber)?.boolValue ?? false
+        func prop(_ key: String) -> CFTypeRef? {
+            IORegistryEntryCreateCFProperty(service, key as CFString,
+                                            kCFAllocatorDefault, 0)?.takeRetainedValue()
+        }
+
+        let isCharging = (prop("IsCharging") as? NSNumber)?.boolValue ?? false
+
+        let rawCurrent = (prop("AppleRawCurrentCapacity") as? NSNumber)?.intValue
+        let rawMax     = (prop("AppleRawMaxCapacity")     as? NSNumber)?.intValue
+        let design     = (prop("DesignCapacity")          as? NSNumber)?.intValue
+        let cycles     = (prop("CycleCount")              as? NSNumber)?.intValue
+        let tempRaw    = (prop("Temperature")             as? NSNumber)?.intValue
+        let voltage    = (prop("Voltage")                 as? NSNumber)?.intValue
+
+        guard let c = rawCurrent, let m = rawMax, let d = design,
+              let cy = cycles, let t = tempRaw, let v = voltage,
+              m > 0, d > 0 else {
+            return (isCharging, nil)
+        }
+
+        let detail = BatteryDetail(
+            rawPercentage:      c * 100 / m,
+            cycleCount:         cy,
+            healthPercent:      m * 100 / d,
+            maxCapacityMAh:     m,
+            designCapacityMAh:  d,
+            temperatureCelsius: (Double(t) / 10.0) - 273.15,
+            voltageMillivolts:  v
+        )
+        return (isCharging, detail)
     }
 }
