@@ -16,25 +16,31 @@ Battery detail data flows through the existing data pipeline as a side-car: `Bat
 ### `BatteryDetail` (new — `Shared/Sources/BatteryCareShared/BatteryDetail.swift`)
 
 ```swift
-public struct BatteryDetail: Codable, Sendable {
-    public let rawPercentage: Int        // CurrentCapacity/MaxCapacity*100 from AppleSmartBattery
+public struct BatteryDetail: Codable, Sendable, Equatable {
+    public let rawPercentage: Int        // AppleRawCurrentCapacity/AppleRawMaxCapacity*100
     public let cycleCount: Int           // CycleCount
-    public let healthPercent: Int        // MaxCapacity/DesignCapacity*100
-    public let maxCapacityMAh: Int       // MaxCapacity (mAh)
+    public let healthPercent: Int        // AppleRawMaxCapacity/DesignCapacity*100
+    public let maxCapacityMAh: Int       // AppleRawMaxCapacity (mAh)
     public let designCapacityMAh: Int    // DesignCapacity (mAh)
-    public let temperatureCelsius: Double // (Temperature_raw / 100.0) - 273.15
+    public let temperatureCelsius: Double // (Temperature_raw / 10.0) - 273.15  [SBS unit: 0.1 K]
     public let voltageMillivolts: Int    // Voltage (mV)
 }
 ```
 
-All fields are non-optional. If any IORegistry key is missing or `MaxCapacity`/`DesignCapacity` are zero, `ioregRead()` returns `nil` for the whole detail struct.
+`Equatable` is included so `BatteryViewModel.apply(_:)` can skip publishing when the value hasn't changed, avoiding unnecessary SwiftUI re-renders on every poll tick.
+
+All fields are non-optional. If any IORegistry key is missing or `AppleRawMaxCapacity`/`DesignCapacity` are zero, `ioregRead()` returns `nil` for the whole detail struct.
 
 ### `BatteryReading` (modified — `BatteryCare/battery-care-daemon/Core/BatteryMonitor.swift`)
 
-Add field:
+Add field with default `nil` so all existing call sites (tests and production) compile without changes:
 ```swift
 public let detail: BatteryDetail?
+
+public init(percentage: Int, isCharging: Bool, isPluggedIn: Bool, detail: BatteryDetail? = nil) { ... }
 ```
+
+`BatteryMonitor.swift` must add `import BatteryCareShared` since `BatteryDetail` is defined in the Shared package.
 
 ### `StatusUpdate` (modified — `Shared/Sources/BatteryCareShared/StatusUpdate.swift`)
 
@@ -68,14 +74,16 @@ private func ioregRead() -> (isCharging: Bool, detail: BatteryDetail?) {
 
     let isCharging = (prop("IsCharging") as? NSNumber)?.boolValue ?? false
 
-    let current = (prop("CurrentCapacity") as? NSNumber)?.intValue
-    let maxCap  = (prop("MaxCapacity")     as? NSNumber)?.intValue
-    let design  = (prop("DesignCapacity")  as? NSNumber)?.intValue
-    let cycles  = (prop("CycleCount")      as? NSNumber)?.intValue
-    let tempRaw = (prop("Temperature")     as? NSNumber)?.intValue   // 0.01 Kelvin
-    let voltage = (prop("Voltage")         as? NSNumber)?.intValue
+    // On Apple Silicon, CurrentCapacity is already a percentage (not mAh).
+    // Use AppleRawCurrentCapacity / AppleRawMaxCapacity for true mAh values.
+    let rawCurrent = (prop("AppleRawCurrentCapacity") as? NSNumber)?.intValue
+    let rawMax     = (prop("AppleRawMaxCapacity")     as? NSNumber)?.intValue
+    let design     = (prop("DesignCapacity")          as? NSNumber)?.intValue
+    let cycles     = (prop("CycleCount")              as? NSNumber)?.intValue
+    let tempRaw    = (prop("Temperature")             as? NSNumber)?.intValue   // 0.1 Kelvin (SBS spec)
+    let voltage    = (prop("Voltage")                 as? NSNumber)?.intValue
 
-    guard let c = current, let m = maxCap, let d = design,
+    guard let c = rawCurrent, let m = rawMax, let d = design,
           let cy = cycles, let t = tempRaw, let v = voltage,
           m > 0, d > 0 else {
         return (isCharging, nil)
@@ -87,7 +95,7 @@ private func ioregRead() -> (isCharging: Bool, detail: BatteryDetail?) {
         healthPercent:      m * 100 / d,
         maxCapacityMAh:     m,
         designCapacityMAh:  d,
-        temperatureCelsius: (Double(t) / 100.0) - 273.15,
+        temperatureCelsius: (Double(t) / 10.0) - 273.15,
         voltageMillivolts:  v
     )
     return (isCharging, detail)
@@ -115,9 +123,9 @@ Add published property:
 @Published public private(set) var batteryDetail: BatteryDetail? = nil
 ```
 
-In `apply(_ update: StatusUpdate)`:
+In `apply(_ update: StatusUpdate)`, use Equatable diffing to avoid re-renders on every poll tick:
 ```swift
-batteryDetail = update.detail
+if batteryDetail != update.detail { batteryDetail = update.detail }
 ```
 
 ## App — `MenuBarView`
@@ -182,11 +190,12 @@ Temperature formatted to one decimal place (e.g., `"28.4 °C"`). All other value
 | Key | Unit | Notes |
 |-----|------|-------|
 | `IsCharging` | Bool | Live charging state |
-| `CurrentCapacity` | mAh | Present charge level |
-| `MaxCapacity` | mAh | Current max (degrades with age) |
-| `DesignCapacity` | mAh | Factory original max |
+| `CurrentCapacity` | % | macOS-smoothed percentage (not mAh on Apple Silicon) |
+| `AppleRawCurrentCapacity` | mAh | Raw BMS current charge level |
+| `AppleRawMaxCapacity` | mAh | Raw BMS current max capacity (degrades with age) |
+| `DesignCapacity` | mAh | Factory original max capacity |
 | `CycleCount` | count | Lifetime full charge cycles |
-| `Temperature` | 0.01 K | `(value / 100.0) - 273.15` = °C |
+| `Temperature` | 0.1 K | Smart Battery Spec unit — `(value / 10.0) - 273.15` = °C |
 | `Voltage` | mV | Present battery voltage |
 
 ## Error Handling
@@ -202,10 +211,11 @@ Temperature formatted to one decimal place (e.g., `"28.4 °C"`). All other value
 
 | File | Change |
 |------|--------|
-| `Shared/Sources/BatteryCareShared/BatteryDetail.swift` | New file: `BatteryDetail` struct |
-| `BatteryCare/battery-care-daemon/Core/BatteryMonitor.swift` | Replace `ioregIsCharging()` with `ioregRead()`; add `detail` to `BatteryReading` |
-| `Shared/Sources/BatteryCareShared/StatusUpdate.swift` | Add `detail: BatteryDetail?` field |
-| `BatteryCare/BatteryCare/ViewModels/BatteryViewModel.swift` | Add `batteryDetail` published property |
+| `Shared/Sources/BatteryCareShared/BatteryDetail.swift` | New file: `BatteryDetail` struct (`Codable`, `Sendable`, `Equatable`) |
+| `BatteryCare/battery-care-daemon/Core/BatteryMonitor.swift` | Add `import BatteryCareShared`; replace `ioregIsCharging()` with `ioregRead()`; add `detail: BatteryDetail? = nil` to `BatteryReading` init |
+| `BatteryCare/battery-care-daemon/Core/DaemonCore.swift` | Update `makeStatusUpdate(from:error:errorDetail:)` to pass `r.detail` through to `StatusUpdate` |
+| `Shared/Sources/BatteryCareShared/StatusUpdate.swift` | Add `detail: BatteryDetail?` field with `decodeIfPresent` / `encodeIfPresent` |
+| `BatteryCare/BatteryCare/ViewModels/BatteryViewModel.swift` | Add `batteryDetail` published property with Equatable diffing |
 | `BatteryCare/BatteryCare/Views/MenuBarView.swift` | Add expandable battery detail section |
 
 ## Out of Scope
