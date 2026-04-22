@@ -5,6 +5,7 @@ struct MenuBarView: View {
     @ObservedObject var vm: BatteryViewModel
     @State private var showOptimizedWarning: Bool = false
     @State private var isEditingSailingLower: Bool = false
+    @State private var showBatteryDetail: Bool = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -28,6 +29,11 @@ struct MenuBarView: View {
             .padding(.bottom, 8)
 
             Divider().padding(.horizontal, 12)
+
+            if vm.batteryDetail != nil {
+                batteryDetailSection
+                Divider().padding(.horizontal, 12)
+            }
 
             // Charge limit slider
             VStack(spacing: 4) {
@@ -127,6 +133,49 @@ struct MenuBarView: View {
         .frame(width: 280)
         .onReceive(vm.$isOptimizedChargingEnabled) { enabled in
             if enabled { showOptimizedWarning = true }
+        }
+    }
+
+    private var batteryDetailSection: some View {
+        VStack(spacing: 0) {
+            Button(action: { showBatteryDetail.toggle() }) {
+                HStack {
+                    Text("Battery Details")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(showBatteryDetail ? 90 : 0))
+                        .animation(.easeInOut(duration: 0.2), value: showBatteryDetail)
+                }
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+
+            if showBatteryDetail, let detail = vm.batteryDetail {
+                VStack(spacing: 3) {
+                    detailRow("Raw %",        "\(detail.rawPercentage)%")
+                    detailRow("Cycle count",  "\(detail.cycleCount)")
+                    detailRow("Health",       "\(detail.healthPercent)%")
+                    detailRow("Max capacity", "\(detail.maxCapacityMAh.formatted()) mAh")
+                    detailRow("Design cap.",  "\(detail.designCapacityMAh.formatted()) mAh")
+                    detailRow("Temperature",  String(format: "%.1f °C", detail.temperatureCelsius))
+                    detailRow("Voltage",      "\(detail.voltageMillivolts) mV")
+                }
+                .padding(.horizontal, 12)
+                .padding(.bottom, 6)
+            }
+        }
+    }
+
+    private func detailRow(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label).font(.caption).foregroundStyle(.secondary)
+            Spacer()
+            Text(value).font(.caption).monospacedDigit()
         }
     }
 
