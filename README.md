@@ -122,6 +122,26 @@ macOS `powerd` runs its own charging heuristics and can override SMC key writes.
 | `disabled` | `disableCharging` |
 | `idle` | (no-op — unplugged) |
 
+### Battery Detail Panel
+
+The menu bar popover displays an expandable **Battery Details** section (when hardware data is available) with seven statistics:
+
+| Stat | Source | Unit | Notes |
+|---|---|---|---|
+| **Raw %** | `AppleRawCurrentCapacity` / `AppleRawMaxCapacity` | Percent | True BMS percentage (macOS smooths this) |
+| **Cycle count** | `CycleCount` | Count | Lifetime full-charge cycles |
+| **Health** | `AppleRawMaxCapacity` / `DesignCapacity * 100` | Percent | Current vs. factory capacity |
+| **Max capacity** | `AppleRawMaxCapacity` | mAh | Current max under load |
+| **Design cap.** | `DesignCapacity` | mAh | Original factory capacity |
+| **Temperature** | `Temperature` (Smart Battery Spec 0.1K) | °C | Battery temp; formula: `(raw/10.0) - 273.15` |
+| **Voltage** | `Voltage` | mV | Current battery voltage |
+
+**Data flow:** `BatteryMonitor.ioregRead()` reads all keys from `AppleSmartBattery` in a single IORegistry open, populates `BatteryDetail`, passes it through `StatusUpdate` to the app, and displays in `MenuBarView`. If any key is missing or the SMC fails, the detail section is hidden (no UI error).
+
+**Update frequency:** Same polling interval as the main battery display. `BatteryViewModel` uses `Equatable` diffing to skip re-renders when the detail values are unchanged.
+
+**UI behavior:** Expandable chevron toggle between the battery % header and charge limit slider. Tap "Battery Details" to expand/collapse; chevron rotates smoothly on toggle.
+
 ### IPC Protocol
 
 The socket lives at `/var/run/battery-care/daemon.sock`. The framing is newline-delimited JSON: each message is a single JSON object followed by `\n`. There are no length-prefix headers.

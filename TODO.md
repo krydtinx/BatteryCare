@@ -51,5 +51,9 @@
 - [ ] Top Up (one-time charge-to-100% override, auto-reverts on unplug)
 - [ ] Calibration mode (full cycle: current → 100% → 10% → 100% → hold)
 - [ ] Schedule (cron-style: set limit, top up, discharge on timer)
-- [ ] Hardware battery % (raw BMS reading, more accurate than macOS-reported %)
+- [x] **Hardware battery % (raw BMS reading, more accurate than macOS-reported %)**
+  - Battery Detail Panel: expandable section in menu bar popover showing 7 stats
+  - Raw %, cycle count, health %, max capacity, design capacity, temperature, voltage
+  - Reads from IORegistry AppleSmartBattery; refreshes on same polling interval
+  - BatteryDetail struct (Codable, Equatable) flows through daemon → app via StatusUpdate
 - [ ] Apple Shortcuts integration (AppIntents)
