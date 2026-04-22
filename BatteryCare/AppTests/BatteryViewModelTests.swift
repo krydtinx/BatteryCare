@@ -175,4 +175,33 @@ final class BatteryViewModelTests: XCTestCase {
         XCTAssertNil(UserDefaults.standard.object(forKey: "com.batterycare.savedSailingLower"),
                      "savedSailingLower should be cleared after restore")
     }
+
+    // MARK: - batteryDetail published property
+
+    @MainActor func testBatteryDetailUpdatedFromStatusUpdate() async {
+        let mock = MockDaemonClient()
+        let vm = BatteryViewModel(client: mock)
+        let detail = BatteryDetail(
+            rawPercentage: 85, cycleCount: 312, healthPercent: 91,
+            maxCapacityMAh: 4821, designCapacityMAh: 5279,
+            temperatureCelsius: 28.4, voltageMillivolts: 4100
+        )
+        let update = StatusUpdate(
+            currentPercentage: 57, isCharging: true, isPluggedIn: true,
+            chargingState: .charging, mode: .normal,
+            limit: 80, sailingLower: 70, pollingInterval: 5,
+            detail: detail
+        )
+        mock.emit(update)
+        await Task.yield()
+        XCTAssertEqual(vm.batteryDetail, detail)
+    }
+
+    @MainActor func testBatteryDetailNilWhenUpdateHasNoDetail() async {
+        let mock = MockDaemonClient()
+        let vm = BatteryViewModel(client: mock)
+        mock.emit(makeUpdate()) // makeUpdate has detail: nil by default
+        await Task.yield()
+        XCTAssertNil(vm.batteryDetail)
+    }
 }

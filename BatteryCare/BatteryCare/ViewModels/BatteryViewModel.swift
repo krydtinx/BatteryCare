@@ -20,6 +20,7 @@ public final class BatteryViewModel: ObservableObject {
     @Published public private(set) var isConnected: Bool = false
     @Published public private(set) var errorMessage: String? = nil
     @Published public private(set) var isOptimizedChargingEnabled: Bool = false
+    @Published public private(set) var batteryDetail: BatteryDetail? = nil
 
     // MARK: - Dependencies
 
@@ -89,6 +90,7 @@ public final class BatteryViewModel: ObservableObject {
         limit = update.limit
         sailingLower = update.sailingLower
         pollingInterval = update.pollingInterval
+        if batteryDetail != update.detail { batteryDetail = update.detail }
 
         if let error = update.error {
             errorMessage = "\(error)" + (update.errorDetail.map { ": \($0)" } ?? "")
