@@ -18,7 +18,7 @@ public final class BatteryViewModel: ObservableObject {
     @Published public private(set) var sailingLower: Int = 80
     @Published public private(set) var pollingInterval: Int = 5
     @Published public private(set) var sleepWakeInterval: Int = 3
-    @Published public var accentColor: AccentColor = .blue
+    @Published public private(set) var accentColor: AccentColor = .blue
     @Published public private(set) var isConnected: Bool = false
     @Published public private(set) var errorMessage: String? = nil
     @Published public private(set) var isOptimizedChargingEnabled: Bool = false

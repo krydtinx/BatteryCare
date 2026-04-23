@@ -168,8 +168,23 @@ final class BatteryViewModelTests: XCTestCase {
 
         let mock = MockDaemonClient()
         let vm = BatteryViewModel(client: mock)
+
+        // The connect pipeline is async (receive(on: DispatchQueue.main) + inner Task),
+        // so poll until UserDefaults is cleared rather than guessing yield counts.
+        let expectation = XCTestExpectation(description: "UserDefaults cleared after restore")
+        var checkTimer: Timer?
+        checkTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { _ in
+            let limitCleared = UserDefaults.standard.object(forKey: "com.batterycare.savedLimit") == nil
+            let sailingCleared = UserDefaults.standard.object(forKey: "com.batterycare.savedSailingLower") == nil
+            if limitCleared && sailingCleared {
+                checkTimer?.invalidate()
+                expectation.fulfill()
+            }
+        }
+
         mock.setConnected(true)
-        await Task.yield()
+        await fulfillment(of: [expectation], timeout: 2.0)
+        checkTimer?.invalidate()
 
         XCTAssertNil(UserDefaults.standard.object(forKey: "com.batterycare.savedLimit"),
                      "savedLimit should be cleared after restore")
