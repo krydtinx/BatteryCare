@@ -10,6 +10,7 @@ final class BatteryViewModelTests: XCTestCase {
     override func tearDown() {
         UserDefaults.standard.removeObject(forKey: "com.batterycare.savedLimit")
         UserDefaults.standard.removeObject(forKey: "com.batterycare.savedSailingLower")
+        UserDefaults.standard.removeObject(forKey: "com.batterycare.accentColor")
         super.tearDown()
     }
 
@@ -203,5 +204,63 @@ final class BatteryViewModelTests: XCTestCase {
         mock.emit(makeUpdate()) // makeUpdate has detail: nil by default
         await Task.yield()
         XCTAssertNil(vm.batteryDetail)
+    }
+
+    // MARK: - sleepWakeInterval
+
+    @MainActor func testSleepWakeIntervalAppliedFromStatusUpdate() async {
+        let mock = MockDaemonClient()
+        let vm = BatteryViewModel(client: mock)
+        let update = StatusUpdate(
+            currentPercentage: 50, isCharging: true, isPluggedIn: true,
+            chargingState: .charging, mode: .normal,
+            limit: 80, sailingLower: 80, pollingInterval: 5, sleepWakeInterval: 10
+        )
+        mock.emit(update)
+        await Task.yield()
+        XCTAssertEqual(vm.sleepWakeInterval, 10)
+    }
+
+    @MainActor func testSetSleepWakeIntervalSendsCommand() async {
+        let mock = MockDaemonClient()
+        let vm = BatteryViewModel(client: mock)
+        vm.setSleepWakeInterval(1)
+        await Task.yield()
+        let hasSent = mock.sentCommands.contains {
+            if case .setSleepWakeInterval(let m) = $0 { return m == 1 }
+            return false
+        }
+        XCTAssertTrue(hasSent, "Expected setSleepWakeInterval(minutes: 1) to be sent")
+    }
+
+    // MARK: - accentColor
+
+    @MainActor func testAccentColorDefaultsToBlue() async {
+        UserDefaults.standard.removeObject(forKey: "com.batterycare.accentColor")
+        let mock = MockDaemonClient()
+        let vm = BatteryViewModel(client: mock)
+        XCTAssertEqual(vm.accentColor, .blue)
+    }
+
+    @MainActor func testSetAccentColorPersistsToUserDefaults() async {
+        let mock = MockDaemonClient()
+        let vm = BatteryViewModel(client: mock)
+        vm.setAccentColor(.green)
+        XCTAssertEqual(UserDefaults.standard.string(forKey: "com.batterycare.accentColor"), "green")
+        XCTAssertEqual(vm.accentColor, .green)
+    }
+
+    @MainActor func testAccentColorLoadedFromUserDefaults() async {
+        UserDefaults.standard.set("orange", forKey: "com.batterycare.accentColor")
+        let mock = MockDaemonClient()
+        let vm = BatteryViewModel(client: mock)
+        XCTAssertEqual(vm.accentColor, .orange)
+    }
+
+    @MainActor func testAccentColorInvalidUserDefaultsFallsBackToBlue() async {
+        UserDefaults.standard.set("invalid", forKey: "com.batterycare.accentColor")
+        let mock = MockDaemonClient()
+        let vm = BatteryViewModel(client: mock)
+        XCTAssertEqual(vm.accentColor, .blue)
     }
 }

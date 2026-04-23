@@ -17,6 +17,8 @@ public final class BatteryViewModel: ObservableObject {
     @Published public private(set) var limit: Int = 80
     @Published public private(set) var sailingLower: Int = 80
     @Published public private(set) var pollingInterval: Int = 5
+    @Published public private(set) var sleepWakeInterval: Int = 3
+    @Published public var accentColor: AccentColor = .blue
     @Published public private(set) var isConnected: Bool = false
     @Published public private(set) var errorMessage: String? = nil
     @Published public private(set) var isOptimizedChargingEnabled: Bool = false
@@ -34,6 +36,8 @@ public final class BatteryViewModel: ObservableObject {
 
     public init(client: DaemonClientProtocol = DaemonClient.shared) {
         self.client = client
+        self.accentColor = UserDefaults.standard.string(forKey: "com.batterycare.accentColor")
+            .flatMap(AccentColor.init(rawValue:)) ?? .blue
         bindClient()
         client.start()
         checkOptimizedCharging()
@@ -51,6 +55,15 @@ public final class BatteryViewModel: ObservableObject {
 
     public func setPollingInterval(_ value: Int) {
         Task { await client.send(.setPollingInterval(seconds: value)) }
+    }
+
+    public func setSleepWakeInterval(_ value: Int) {
+        Task { await client.send(.setSleepWakeInterval(minutes: value)) }
+    }
+
+    public func setAccentColor(_ color: AccentColor) {
+        accentColor = color
+        UserDefaults.standard.set(color.rawValue, forKey: "com.batterycare.accentColor")
     }
 
     public func enableCharging() {
@@ -90,6 +103,7 @@ public final class BatteryViewModel: ObservableObject {
         limit = update.limit
         sailingLower = update.sailingLower
         pollingInterval = update.pollingInterval
+        sleepWakeInterval = update.sleepWakeInterval
         if batteryDetail != update.detail { batteryDetail = update.detail }
 
         if let error = update.error {

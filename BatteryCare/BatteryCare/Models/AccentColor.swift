@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum AccentColor: String, CaseIterable, Equatable {
+public enum AccentColor: String, CaseIterable, Equatable {
     case blue   = "blue"
     case green  = "green"
     case orange = "orange"
@@ -8,9 +8,9 @@ enum AccentColor: String, CaseIterable, Equatable {
     case red    = "red"
     case pink   = "pink"
 
-    static let `default`: AccentColor = .blue
+    public static let `default`: AccentColor = .blue
 
-    var color: Color {
+    public var color: Color {
         switch self {
         case .blue:   return Color(red: 0.04, green: 0.52, blue: 1.0)   // #0A84FF
         case .green:  return Color(red: 0.20, green: 0.78, blue: 0.35)  // #34C759
