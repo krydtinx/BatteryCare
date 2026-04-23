@@ -5,7 +5,7 @@ public enum Command: Sendable {
     case enableCharging
     case disableCharging
     case setPollingInterval(seconds: Int)       // clamped 1–30 by daemon
-    case setSleepWakeInterval(minutes: Int)     // clamped 5–30 by daemon
+    case setSleepWakeInterval(minutes: Int)     // clamped 1–30 by daemon
 }
 
 extension Command: Codable {

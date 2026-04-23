@@ -240,7 +240,7 @@ final class DaemonCoreTests: XCTestCase {
     // MARK: - sleepWakeInterval decoder fallback
 
     func testSleepWakeIntervalDecoderFallback() throws {
-        // settings.json written before sleepWakeInterval existed must load with default 5
+        // settings.json written before sleepWakeInterval existed must load with default 3
         let json = """
         {
             "limit": 80,
@@ -251,15 +251,21 @@ final class DaemonCoreTests: XCTestCase {
         }
         """.data(using: .utf8)!
         let settings = try JSONDecoder().decode(DaemonSettings.self, from: json)
-        XCTAssertEqual(settings.sleepWakeInterval, 5)
+        XCTAssertEqual(settings.sleepWakeInterval, 3)
     }
 
     // MARK: - setSleepWakeInterval clamping
 
     func testSetSleepWakeIntervalClampMinimum() async {
         let core = makeCore()
-        let update = await core.handle(.setSleepWakeInterval(minutes: 3))
-        XCTAssertEqual(update.sleepWakeInterval, 5)  // clamped from 3 → 5
+        let update = await core.handle(.setSleepWakeInterval(minutes: 0))
+        XCTAssertEqual(update.sleepWakeInterval, 1)  // clamped from 0 → 1
+    }
+
+    func testSetSleepWakeIntervalMinimumValid() async {
+        let core = makeCore()
+        let update = await core.handle(.setSleepWakeInterval(minutes: 1))
+        XCTAssertEqual(update.sleepWakeInterval, 1)
     }
 
     func testSetSleepWakeIntervalClampMaximum() async {

@@ -15,7 +15,7 @@ public struct DaemonSettings: Codable {
     public var isChargingDisabled: Bool
     /// UID of the app process that installed the daemon. Only this UID may send IPC commands.
     public var allowedUID: uid_t
-    /// How long between maintenance wakes during sleep (minutes), clamped 5–30 by DaemonCore.
+    /// How long between maintenance wakes during sleep (minutes), clamped 1–30 by DaemonCore.
     public var sleepWakeInterval: Int
 
     public init(
@@ -24,7 +24,7 @@ public struct DaemonSettings: Codable {
         pollingInterval: Int = 5,
         isChargingDisabled: Bool = false,
         allowedUID: uid_t = 0,
-        sleepWakeInterval: Int = 5
+        sleepWakeInterval: Int = 3
     ) {
         self.limit = limit
         self.sailingLower = sailingLower
@@ -36,7 +36,7 @@ public struct DaemonSettings: Codable {
 
     // Custom decoder so that settings.json written before sailingLower existed
     // still loads correctly (missing key → defaults to limit, preserving old behaviour).
-    // Also handles missing sleepWakeInterval (defaults to 5).
+    // Also handles missing sleepWakeInterval (defaults to 3).
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         limit = try c.decode(Int.self, forKey: .limit)
@@ -44,7 +44,7 @@ public struct DaemonSettings: Codable {
         pollingInterval = try c.decode(Int.self, forKey: .pollingInterval)
         isChargingDisabled = try c.decode(Bool.self, forKey: .isChargingDisabled)
         allowedUID = try c.decode(uid_t.self, forKey: .allowedUID)
-        sleepWakeInterval = try c.decodeIfPresent(Int.self, forKey: .sleepWakeInterval) ?? 5
+        sleepWakeInterval = try c.decodeIfPresent(Int.self, forKey: .sleepWakeInterval) ?? 3
     }
 
     // MARK: - Persistence

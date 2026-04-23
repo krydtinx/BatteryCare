@@ -106,7 +106,7 @@ public actor DaemonCore {
             return makeStatusUpdate()
 
         case .setSleepWakeInterval(let m):
-            settings.sleepWakeInterval = max(5, min(30, m))
+            settings.sleepWakeInterval = max(1, min(30, m))
             try? settings.save()
             return makeStatusUpdate()
 
@@ -294,7 +294,7 @@ private extension StatusUpdate {
         StatusUpdate(
             currentPercentage: 0, isCharging: false, isPluggedIn: false,
             chargingState: .idle, mode: .normal, limit: 80, sailingLower: 80, pollingInterval: 5,
-            sleepWakeInterval: 5, detail: nil
+            sleepWakeInterval: 3, detail: nil
         )
     }
 }

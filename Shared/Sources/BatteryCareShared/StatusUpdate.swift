@@ -28,7 +28,7 @@ public struct StatusUpdate: Sendable {
         limit: Int,
         sailingLower: Int,
         pollingInterval: Int,
-        sleepWakeInterval: Int = 5,
+        sleepWakeInterval: Int = 3,
         error: DaemonError? = nil,
         errorDetail: String? = nil,
         detail: BatteryDetail? = nil
@@ -63,7 +63,7 @@ extension StatusUpdate: Codable {
         limit = try container.decode(Int.self, forKey: .limit)
         sailingLower = try container.decode(Int.self, forKey: .sailingLower)
         pollingInterval = try container.decode(Int.self, forKey: .pollingInterval)
-        sleepWakeInterval = try container.decodeIfPresent(Int.self, forKey: .sleepWakeInterval) ?? 5
+        sleepWakeInterval = try container.decodeIfPresent(Int.self, forKey: .sleepWakeInterval) ?? 3
         error = try container.decodeIfPresent(DaemonError.self, forKey: .error)
         errorDetail = try container.decodeIfPresent(String.self, forKey: .errorDetail)
         detail = try container.decodeIfPresent(BatteryDetail.self, forKey: .detail)
