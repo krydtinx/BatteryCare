@@ -57,7 +57,7 @@
   - Reads from IORegistry AppleSmartBattery; refreshes on same polling interval
   - BatteryDetail struct (Codable, Equatable) flows through daemon → app via StatusUpdate
 - [ ] Apple Shortcuts integration (AppIntents)
-- [ ] **Settings Menu**
-  - Sleep prevention interval (configurable duration for idle sleep prevention)
-  - Color theme (light/dark/system appearance)
-  - Move check interval inside settings (polling interval configuration)
+- [x] **Settings Menu**
+  - Sleep check interval (1/3/5/10 min, default 3 min — backed by daemon IPC)
+  - Accent color (6 preset swatches, stored in UserDefaults, applied to range slider)
+  - Poll interval moved from main view into settings panel
