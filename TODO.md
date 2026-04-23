@@ -57,3 +57,7 @@
   - Reads from IORegistry AppleSmartBattery; refreshes on same polling interval
   - BatteryDetail struct (Codable, Equatable) flows through daemon → app via StatusUpdate
 - [ ] Apple Shortcuts integration (AppIntents)
+- [ ] **Settings Menu**
+  - Sleep prevention interval (configurable duration for idle sleep prevention)
+  - Color theme (light/dark/system appearance)
+  - Move check interval inside settings (polling interval configuration)
