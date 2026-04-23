@@ -38,9 +38,9 @@ func rangeSliderValue(for x: CGFloat, trackWidth: CGFloat, range: ClosedRange<In
 /// Convert an integer value to a track-space x offset.
 /// Clamps `value` to `range` before computing the offset, so out-of-range inputs
 /// are silently constrained rather than producing coordinates outside the slider bounds.
-/// Returns 0 for degenerate `range.count < 2`.
+/// Returns 0 for degenerate `range.count < 2` or non-positive `trackWidth`.
 func rangeSliderX(for value: Int, trackWidth: CGFloat, range: ClosedRange<Int>) -> CGFloat {
-    guard range.count >= 2 else { return 0 }
+    guard range.count >= 2, trackWidth > 0 else { return 0 }
     let clamped = max(range.lowerBound, min(range.upperBound, value))
     let fraction = Double(clamped - range.lowerBound) / Double(range.count - 1)
     return trackWidth * CGFloat(fraction)
@@ -57,6 +57,10 @@ struct RangeSliderView: View {
     var onEditingChanged: ((Bool) -> Void)?
     var config: RangeSliderConfig
 
+    // editingCount tracks how many handles are currently being dragged.
+    // onEditingChanged(true) fires when count goes 0→1; false when count goes 1→0.
+    // This prevents double-fire if both handles are dragged in rapid succession.
+    @State private var editingCount = 0
     @State private var isUpperEditing = false
     @State private var dragStartUpper: Int = 0
     @State private var isLowerEditing = false
@@ -139,7 +143,8 @@ struct RangeSliderView: View {
                         if !isUpperEditing {
                             dragStartUpper = upper
                             isUpperEditing = true
-                            onEditingChanged?(true)
+                            editingCount += 1
+                            if editingCount == 1 { onEditingChanged?(true) }
                         }
                         let startX = rangeSliderX(for: dragStartUpper, trackWidth: trackWidth, range: range)
                         let trackX = startX + value.translation.width
@@ -150,7 +155,8 @@ struct RangeSliderView: View {
                     }
                     .onEnded { _ in
                         isUpperEditing = false
-                        onEditingChanged?(false)
+                        editingCount -= 1
+                        if editingCount == 0 { onEditingChanged?(false) }
                     }
             )
             .accessibilityLabel(upperLabel)
@@ -182,7 +188,8 @@ struct RangeSliderView: View {
                         if !isLowerEditing {
                             dragStartLower = lower
                             isLowerEditing = true
-                            onEditingChanged?(true)
+                            editingCount += 1
+                            if editingCount == 1 { onEditingChanged?(true) }
                         }
                         let startX = rangeSliderX(for: dragStartLower, trackWidth: trackWidth, range: range)
                         let trackX = startX + value.translation.width
@@ -193,7 +200,8 @@ struct RangeSliderView: View {
                     }
                     .onEnded { _ in
                         isLowerEditing = false
-                        onEditingChanged?(false)
+                        editingCount -= 1
+                        if editingCount == 0 { onEditingChanged?(false) }
                     }
             )
             .accessibilityLabel(lowerLabel)
