@@ -4,9 +4,31 @@ import BatteryCareShared
 struct MenuBarView: View {
     @ObservedObject var vm: BatteryViewModel
     @State private var showOptimizedWarning: Bool = false
-@State private var showBatteryDetail: Bool = false
+    @State private var showBatteryDetail: Bool = false
+    @State private var showSettings: Bool = false
 
     var body: some View {
+        Group {
+            if showSettings {
+                SettingsView(vm: vm, onDismiss: {
+                    showSettings = false
+                    showBatteryDetail = false
+                })
+                    .transition(.move(edge: .trailing))
+            } else {
+                mainContent
+                    .transition(.move(edge: .leading))
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: showSettings)
+        .onReceive(vm.$isOptimizedChargingEnabled) { enabled in
+            if enabled { showOptimizedWarning = true }
+        }
+    }
+
+    // MARK: Main content
+
+    private var mainContent: some View {
         VStack(spacing: 0) {
             // Optimized Charging conflict banner
             if showOptimizedWarning {
@@ -29,38 +51,8 @@ struct MenuBarView: View {
 
             Divider().padding(.horizontal, 12)
 
-            RangeSliderView(
-                lower: Binding(
-                    get: { vm.sailingLower },
-                    set: { vm.setSailingLower($0) }
-                ),
-                upper: Binding(
-                    get: { vm.limit },
-                    set: { vm.setLimit($0) }
-                )
-            )
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-
-            // Poll interval picker
-            VStack(spacing: 4) {
-                HStack {
-                    Text("Update interval").font(.caption).foregroundStyle(.secondary)
-                    Spacer()
-                }
-                Picker("", selection: Binding(
-                    get: { vm.pollingInterval },
-                    set: { vm.setPollingInterval($0) }
-                )) {
-                    Text("1s").tag(1)
-                    Text("3s").tag(3)
-                    Text("5s").tag(5)
-                    Text("10s").tag(10)
-                }
-                .pickerStyle(.segmented)
-            }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 8)
+            // Range slider with accent color
+            rangeSlider
 
             // Charging control buttons
             HStack(spacing: 8) {
@@ -95,7 +87,7 @@ struct MenuBarView: View {
 
             Divider().padding(.horizontal, 12)
 
-            // Connection status dot + quit
+            // Footer: connection status + gear + quit
             HStack {
                 Circle()
                     .fill(vm.isConnected ? Color.green : Color.orange)
@@ -103,6 +95,13 @@ struct MenuBarView: View {
                 Text(vm.isConnected ? "Connected" : "Disconnected")
                     .font(.caption2).foregroundStyle(.secondary)
                 Spacer()
+                Button(action: { showSettings = true }) {
+                    Image(systemName: "gear")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .padding(.trailing, 6)
                 Button("Quit") { NSApplication.shared.terminate(nil) }
                     .font(.caption2).buttonStyle(.link)
             }
@@ -110,10 +109,30 @@ struct MenuBarView: View {
             .padding(.vertical, 8)
         }
         .frame(width: 280)
-        .onReceive(vm.$isOptimizedChargingEnabled) { enabled in
-            if enabled { showOptimizedWarning = true }
-        }
     }
+
+    // MARK: Range slider
+
+    private var rangeSlider: some View {
+        var config = RangeSliderConfig.default
+        config.fillColor = vm.accentColor.color
+        config.lowerHandleColor = vm.accentColor.color
+        return RangeSliderView(
+            lower: Binding(
+                get: { vm.sailingLower },
+                set: { vm.setSailingLower($0) }
+            ),
+            upper: Binding(
+                get: { vm.limit },
+                set: { vm.setLimit($0) }
+            ),
+            config: config
+        )
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+    }
+
+    // MARK: Battery detail
 
     private var batteryDetailSection: some View {
         VStack(spacing: 0) {
