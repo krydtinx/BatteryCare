@@ -100,9 +100,12 @@ public final class SleepWatcher: SleepWatcherProtocol, @unchecked Sendable {
         ctx.notifierObject = notifierObject
         ctx.notifyPort = notifyPort
 
-        // Add the notification port's run-loop source to the current run loop.
+        // DaemonCore runs on a Swift actor executor, which is not tied to a
+        // CFRunLoop. Register on the main run loop, which main.swift keeps alive.
         let runLoopSource = IONotificationPortGetRunLoopSource(notifyPort)!.takeUnretainedValue()
-        CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, .defaultMode)
+        let mainRunLoop = CFRunLoopGetMain()
+        CFRunLoopAddSource(mainRunLoop, runLoopSource, .defaultMode)
+        CFRunLoopWakeUp(mainRunLoop)
     }
 
     private func unregisterNotifications() {
@@ -111,11 +114,13 @@ public final class SleepWatcher: SleepWatcherProtocol, @unchecked Sendable {
         }
         if let port = ctx.notifyPort {
             if let source = IONotificationPortGetRunLoopSource(port) {
+                let mainRunLoop = CFRunLoopGetMain()
                 CFRunLoopRemoveSource(
-                    CFRunLoopGetCurrent(),
+                    mainRunLoop,
                     source.takeUnretainedValue(),
                     .defaultMode
                 )
+                CFRunLoopWakeUp(mainRunLoop)
             }
             IONotificationPortDestroy(port)
             ctx.notifyPort = nil

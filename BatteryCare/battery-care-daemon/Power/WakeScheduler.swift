@@ -16,11 +16,10 @@ public protocol WakeSchedulerProtocol: Sendable {
 
 public final class WakeScheduler: WakeSchedulerProtocol, @unchecked Sendable {
 
-    // Attempting to use "MaintenanceScheduled" as a raw string for dark wakes.
-    // Do NOT use kIOPMAutoWake — it causes a full user wake on Apple Silicon.
-    // Verify the exact constant string in IOPMLib.h if the build fails:
-    //   grep -r "MaintenanceScheduled" $(xcrun --show-sdk-path)/System/Library/Frameworks/IOKit.framework/Headers/
-    private let scheduleType = "MaintenanceScheduled" as CFString
+    // IOPMSchedulePowerEvent only accepts the documented auto event types from
+    // IOPMLib.h. "MaintenanceWakeCalendarDate" is a settings key, not a valid
+    // schedule type for this API.
+    private let scheduleType = "wake" as CFString
     private let clientID = "com.batterycare.daemon" as CFString
 
     public init() {}

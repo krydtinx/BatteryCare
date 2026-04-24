@@ -152,31 +152,33 @@ The socket lives at `/var/run/battery-care/daemon.sock`. The framing is newline-
 |---|---|---|
 | `getStatus` | — | Request a current status snapshot |
 | `setLimit` | `percentage: Int` (clamped 20–100) | Set the charge limit |
+| `setSailingLower` | `percentage: Int` (clamped 20–limit) | Set the sailing lower bound |
 | `enableCharging` | — | Re-enable charging (clears disabled flag) |
 | `disableCharging` | — | Unconditionally stop charging |
 | `setPollingInterval` | `seconds: Int` (clamped 1–30) | Change polling frequency |
+| `setSleepWakeInterval` | `minutes: Int` (clamped 1–30) | Change the interval between sleep wake checks |
 
 **StatusUpdate (daemon → app):**
 
-Sent as a response to any command and also pushed proactively after every poll tick and sleep/wake event. Key fields: `currentPercentage`, `isCharging`, `isPluggedIn`, `chargingState`, `limit`, `pollingInterval`, `error?`, `errorDetail?`.
+Sent as a response to any command and also pushed proactively after every poll tick and sleep/wake event. Key fields: `currentPercentage`, `isCharging`, `isPluggedIn`, `chargingState`, `limit`, `sailingLower`, `pollingInterval`, `sleepWakeInterval`, `error?`, `errorDetail?`.
 
 ### Sleep/Wake Handling
 
 `SleepWatcher` registers with `IORegisterForSystemPower` and exposes an `AsyncStream<SleepEvent>`. `DaemonCore` listens in a dedicated `sleepLoop`:
 
 - **`willSleep`**: Re-apply current SMC state immediately. This matters because macOS `powerd` often enables charging right before sleep (so the battery reaches 100% overnight). Re-applying the limit just before sleep blocks this.
-- **`hasPoweredOn`**: Re-apply state and run a poll. Then schedule a delayed re-poll 5 seconds later. This is necessary because macOS `powerd` briefly re-initializes SMC state after wake, which can temporarily override the daemon's charging limit. The 5-second retry ensures the daemon outlasts the powerd initialization window without blocking on the main wake-event path.
+- **`hasPoweredOn`**: Cancel any scheduled wake, then run an immediate poll and state re-evaluation.
 
 `IOAllowPowerChange` is called synchronously in the IOKit callback before returning, which is required — if the callback does not ack within ~30 seconds, macOS force-sleeps regardless.
 
-#### Scheduled Maintenance Wakes (Sleep Charging Fix)
+#### Scheduled Wake Checks During Sleep
 
-When the user closes the Mac lid while charging is below the limit, the daemon is suspended and the SMC continues charging unchecked. To prevent overshoot, the daemon schedules periodic dark (maintenance) wakes during sleep using `IOPMSchedulePowerEvent`:
+When the user closes the Mac lid while charging is below the limit, the daemon is suspended and the SMC continues charging unchecked. To prevent overshoot, the daemon schedules periodic wake checks during sleep using `IOPMSchedulePowerEvent`:
 
 **Sleep cycle:**
 - **`willSleep`**: If plugged in, below limit, and not disabled:
   1. Disable charging (best-effort)
-  2. Schedule a dark wake in N minutes (configurable via `sleepWakeInterval`, default 5)
+  2. Schedule a wake in N minutes (configurable via `sleepWakeInterval`, default 3)
   3. Release sleep assertion
   4. Return to sleep
 - **`hasPoweredOn`** (scheduled wake):
@@ -185,9 +187,9 @@ When the user closes the Mac lid while charging is below the limit, the daemon i
   3. Re-enable charging if still below limit
   4. Return to sleep (or stay awake if user initiated wake)
 
-The cycle repeats every N minutes until the battery reaches the limit. `sleepWakeInterval` can be set via the IPC protocol (`setSleepWakeInterval` command) and is persisted in `settings.json` (clamped 5–30 minutes).
+The cycle repeats every N minutes until the battery reaches the limit. `sleepWakeInterval` can be set via the IPC protocol (`setSleepWakeInterval` command) and is persisted in `settings.json` (clamped 1–30 minutes).
 
-**Best-effort disabling:** The `disableCharging` call in `willSleep` races with the kernel's sleep sequence and may not execute before the system sleeps. The scheduled maintenance wake is the primary correctness mechanism; pre-sleep disable is a secondary precaution.
+**Best-effort disabling:** The `disableCharging` call in `willSleep` races with the kernel's sleep sequence and may not execute before the system sleeps. The scheduled wake check is the primary correctness mechanism; pre-sleep disable is a secondary precaution.
 
 ### Daemon Installation
 
@@ -239,9 +241,11 @@ Then disable macOS Optimized Charging so it does not conflict:
 2. Runs `sudo launchctl bootout` to stop any existing daemon.
 3. Copies the built `BatteryCare.app` to `/Applications/BatteryCare.app` and sets `root:wheel` ownership.
 4. Strips Gatekeeper provenance attributes (`xattr -rc`) so the app is not quarantined.
-5. Copies the LaunchDaemon plist to `/Library/LaunchDaemons/` and seeds `settings.json` with the logged-in user's UID.
+5. Copies the LaunchDaemon plist to `/Library/LaunchDaemons/` and rewrites `settings.json` with install-time defaults plus the logged-in user's UID.
 6. Runs `launchctl bootstrap system` to start the daemon.
 7. Opens the app and cleans up the build directory.
+
+`install.sh` resets daemon settings on install. The seeded file sets `limit=80`, `pollingInterval=5`, and `isChargingDisabled=false`; missing keys fall back to daemon defaults such as `sailingLower=limit` and `sleepWakeInterval=3`.
 
 ### Build individual targets manually
 

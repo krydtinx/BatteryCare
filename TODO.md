@@ -24,9 +24,10 @@
   - May improve UX by showing a visual indicator that lower is constrained by limit
 
 - [x] **Sleep prevention not blocking over-charge when closing lid**
-  - **FIXED: Scheduled maintenance wakes during sleep**
+  - **FIXED: Scheduled wake checks during sleep**
   - Root cause: When Mac sleeps, daemon suspends. SMC continues charging unchecked. No polling to stop at limit.
-  - Solution: `IOPMSchedulePowerEvent` schedules dark (maintenance) wakes every N minutes during sleep
+  - Root cause: Sleep notifications were registered on the wrong run loop, and the wake scheduler used an invalid `IOPMSchedulePowerEvent` type
+  - Solution: `IOPMSchedulePowerEvent` schedules periodic wake checks every N minutes during sleep
   - On each wake: daemon polls battery, re-evaluates state, corrects SMC if needed, returns to sleep
   - Cycle repeats until limit reached or user wakes Mac naturally
   - Implemented in Task 5 with comprehensive logging and error handling
